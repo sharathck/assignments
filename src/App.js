@@ -10,15 +10,22 @@ import { saveAs } from 'file-saver';
 import * as docx from 'docx';
 import { FaSignOutAlt, FaFileWord, FaFileAlt } from 'react-icons/fa';
 
+import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
+
+const speechKey = process.env.REACT_APP_AZURE_SPEECH_API_KEY;
+const serviceRegion = 'eastus';
+const voiceName = 'en-US-AvaNeural';
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBNeonGTfBV2QhXxkufPueC-gQLCrcsB08",
-  authDomain: "reviewtext-ad5c6.firebaseapp.com",
-  databaseURL: "https://reviewtext-ad5c6.firebaseio.com",
-  projectId: "reviewtext-ad5c6",
-  storageBucket: "reviewtext-ad5c6.appspot.com",
-  messagingSenderId: "892085575649",
-  appId: "1:892085575649:web:b57abe0e1438f10dc6fca0"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -100,6 +107,41 @@ function App() {
     auth.signOut();
   };
 
+
+  const splitMessage = (msg, chunkSize = 4000) => {
+    const chunks = [];
+    for (let i = 0; i < msg.length; i += chunkSize) {
+      chunks.push(msg.substring(i, i + chunkSize));
+    }
+    return chunks;
+  };
+  
+  const synthesizeSpeech = async () => {
+    const speechConfig = speechsdk.SpeechConfig.fromSubscription(speechKey, serviceRegion);
+    speechConfig.speechSynthesisVoiceName = voiceName;
+  
+    const audioConfig = speechsdk.AudioConfig.fromDefaultSpeakerOutput();
+    const speechSynthesizer = new speechsdk.SpeechSynthesizer(speechConfig, audioConfig);
+  
+    const chunks = splitMessage(articles);
+    for (const chunk of chunks) {
+      try {
+        const result = await speechSynthesizer.speakTextAsync(chunk);
+        if (result.reason === speechsdk.ResultReason.SynthesizingAudioCompleted) {
+          console.log(`Speech synthesized to speaker for text: [${chunk}]`);
+        } else if (result.reason === speechsdk.ResultReason.Canceled) {
+          const cancellationDetails = speechsdk.SpeechSynthesisCancellationDetails.fromResult(result);
+          console.error(`Speech synthesis canceled: ${cancellationDetails.reason}`);
+          if (cancellationDetails.reason === speechsdk.CancellationReason.Error) {
+            console.error(`Error details: ${cancellationDetails.errorDetails}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error synthesizing speech: ${error}`);
+      }
+    }
+  };
+  
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (newTask.trim() !== '') {
@@ -212,6 +254,7 @@ function App() {
               </button>
               <button onClick={generateDocx}><FaFileWord /></button>
               <button className='textbutton' onClick={generateText}><FaFileAlt /></button>
+              <button onClick={synthesizeSpeech}><img src="speak.png" style={{ width: '22px', height: '18px' }} /></button>
           <form onSubmit={handleAddTask}>
             <input
               className="inputtextbox"
