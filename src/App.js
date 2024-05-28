@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaCheck, FaEye } from 'react-icons/fa';
+import { FaPlus, FaEye, FaCheck, FaTrash, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
@@ -8,8 +8,6 @@ import { collection, query, where, orderBy, onSnapshot, addDoc, doc, updateDoc, 
 import { Readability } from '@mozilla/readability';
 import { saveAs } from 'file-saver';
 import * as docx from 'docx';
-import { FaSignOutAlt, FaFileWord, FaFileAlt } from 'react-icons/fa';
-
 import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
 
 const speechKey = process.env.REACT_APP_AZURE_SPEECH_API_KEY;
@@ -40,6 +38,7 @@ function App() {
   const [editTask, setEditTask] = useState(null);
   const [editTaskText, setEditTaskText] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
+  const [readerMode, setReaderMode] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -56,7 +55,7 @@ function App() {
       const limitParam = urlParams.get('limit');
       const limitValue = limitParam ? parseInt(limitParam) : 6;
       //print limit value
-      console.log('limit value: ',limitValue);
+      console.log('limit value: ', limitValue);
       const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', false), orderBy('createdDate', 'desc'), limit(limitValue));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const tasksData = snapshot.docs.map((doc) => ({
@@ -78,7 +77,7 @@ function App() {
       const limitParam = urlParams.get('limit');
       const limitValue = limitParam ? parseInt(limitParam) : 6;
       //print limit value
-      console.log('limit value: ',limitValue);
+      console.log('limit value: ', limitValue);
       const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const completedTasksData = snapshot.docs.map((doc) => ({
@@ -87,17 +86,17 @@ function App() {
         }));
         setCompletedTasks(completedTasksData);
       });
-  
+
       return () => unsubscribe();
     }
   }, [user]);
-  
+
   useEffect(() => {
     if (showCompleted) {
       handleShowCompleted();
     }
   }, [showCompleted]);
-  
+
   const handleSignIn = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider);
@@ -115,14 +114,14 @@ function App() {
     }
     return chunks;
   };
-  
+
   const synthesizeSpeech = async () => {
     const speechConfig = speechsdk.SpeechConfig.fromSubscription(speechKey, serviceRegion);
     speechConfig.speechSynthesisVoiceName = voiceName;
-  
+
     const audioConfig = speechsdk.AudioConfig.fromDefaultSpeakerOutput();
     const speechSynthesizer = new speechsdk.SpeechSynthesizer(speechConfig, audioConfig);
-  
+
     const chunks = splitMessage(articles);
     for (const chunk of chunks) {
       try {
@@ -141,14 +140,14 @@ function App() {
       }
     }
   };
-  
+
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (newTask.trim() !== '') {
       let textresponse = '';
       if (newTask.substring(0, 4) == 'http') {
         const urlWithoutProtocol = newTask.replace(/^https?:\/\//, '');
-        const response = await fetch('https://us-central1-reviewtext-ad5c6.cloudfunctions.net/function-9?url='+ newTask);
+        const response = await fetch('https://us-central1-reviewtext-ad5c6.cloudfunctions.net/function-9?url=' + newTask);
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -214,47 +213,61 @@ function App() {
       const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
       const time = `${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
       const dateTime = `${date}__${time}`;
-      saveAs(blob, dateTime + "_" +  ".docx");
+      saveAs(blob, dateTime + "_" + ".docx");
       console.log("Document created successfully");
-    });  };
+    });
+  };
 
 
-    const generateText = async () => {
-      const blob = new Blob([articles], { type: "text/plain;charset=utf-8" });
-      const now = new Date();
-      const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-      const time = `${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
-      const dateTime = `${date}__${time}`;
-      saveAs(blob, dateTime + ".txt");
-    }
-  
-    const handleShowCompleted = () => {
-      const todoCollection = collection(db, 'todo');
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 6;
-      const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const completedTasksData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCompletedTasks(completedTasksData);
-      });
-    
-      return () => unsubscribe();
-    };
-    
+  const generateText = async () => {
+    const blob = new Blob([articles], { type: "text/plain;charset=utf-8" });
+    const now = new Date();
+    const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const time = `${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
+    const dateTime = `${date}__${time}`;
+    saveAs(blob, dateTime + ".txt");
+  }
+
+  const handleShowCompleted = () => {
+    const todoCollection = collection(db, 'todo');
+    const urlParams = new URLSearchParams(window.location.search);
+    const limitParam = urlParams.get('limit');
+    const limitValue = limitParam ? parseInt(limitParam) : 6;
+    const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const completedTasksData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCompletedTasks(completedTasksData);
+    });
+
+    return () => unsubscribe();
+  };
+  const handleReaderMode = () => {
+    setReaderMode(true);
+  };
+
+  const handleBack = () => {
+    setReaderMode(false);
+  };
+
   return (
     <div className="app">
-      {user ? (
+      {readerMode ? (
+          <div>
+            <button onClick={handleBack}><FaArrowLeft /></button>
+            <p>{articles}</p>
+          </div>
+        ) : (
         <div>
-              <button className="signoutbutton" onClick={handleSignOut}>
-              <FaSignOutAlt />
-              </button>
-              <button onClick={generateDocx}><FaFileWord /></button>
-              <button className='textbutton' onClick={generateText}><FaFileAlt /></button>
-              <button onClick={synthesizeSpeech}><img src="speak.png" style={{ width: '22px', height: '18px' }} /></button>
+          <button className="signoutbutton" onClick={handleSignOut}>
+            <FaSignOutAlt />
+          </button>
+          <button onClick={generateDocx}><FaFileWord /></button>
+          <button className='textbutton' onClick={generateText}><FaFileAlt /></button>
+          <button onClick={synthesizeSpeech}><img src="speak.png" style={{ width: '22px', height: '18px' }} /></button>
+          <button onClick={handleReaderMode}><FaReadme /></button>
           <form onSubmit={handleAddTask}>
             <input
               className="inputtextbox"
@@ -308,10 +321,10 @@ function App() {
                   .filter((task) => task.status)
                   .map((task) => (
                     <li key={task.id} className="completed">
-                   <button onClick={() => handleToggleStatus(task.id, task.status)}>
+                      <button onClick={() => handleToggleStatus(task.id, task.status)}>
                         <FaCheck />
                       </button>
-                         {task.task}
+                      {task.task}
                     </li>
                   ))}
               </ul>
@@ -319,9 +332,8 @@ function App() {
             </div>
           )}
         </div>
-      ) : (
-        <button onClick={handleSignIn}>Sign In with Google</button>
-      )}
+      ) }
+      {!user && <button onClick={handleSignIn}>Sign In with Google</button>}
     </div>
   );
 }
