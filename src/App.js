@@ -236,7 +236,7 @@ function App() {
     const todoCollection = collection(db, 'todo');
     const urlParams = new URLSearchParams(window.location.search);
     const limitParam = urlParams.get('limit');
-    const limitValue = limitParam ? parseInt(limitParam) : 6;
+    const limitValue = limitParam ? parseInt(limitParam) : 31;
     const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const completedTasksData = snapshot.docs.map((doc) => ({
@@ -363,8 +363,7 @@ function App() {
                       <button className='markcompletebutton' onClick={() => handleToggleStatus(task.id, task.status)}>
                         <FaCheck />
                       </button>
-                      <span>{task.task}</span>
-
+                      <span>{task.task.substring(0,88)}</span>
                     </>
                   )}
                 </li>
