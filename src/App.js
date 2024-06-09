@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEye, FaCheck, FaTrash, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
+import { FaPlus, FaEye, FaCheck, FaHeadphones, FaTrash, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, addDoc, doc, updateDoc, limit, and } from 'firebase/firestore';
+import { getFirestore, doc, deleteDoc, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
+import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider } from 'firebase/auth';
+
 import { Readability } from '@mozilla/readability';
 import { saveAs } from 'file-saver';
 import * as docx from 'docx';
@@ -39,6 +39,10 @@ function App() {
   const [editTaskText, setEditTaskText] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [readerMode, setReaderMode] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -252,11 +256,61 @@ function App() {
     setReaderMode(false);
   };
 
+  const handlePasswordReset = async () => {
+    if (!email) {
+      alert('Please enter your email address.');
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert('Password reset email sent, please check your inbox.');
+    } catch (error) {
+      console.error('Error sending password reset email', error);
+    }
+  };
+
+
+  const handleSignInWithEmail = async (e) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      if (!user.emailVerified) {
+        await auth.signOut();
+        alert('Please verify your email before signing in.');
+      }
+    } catch (error) {
+      if (error.code === 'auth/wrong-password') {
+        alert('Wrong password, please try again.');
+      } else {
+        alert('Error signing in, please try again.' + error.message);
+        console.error('Error signing in:', error);
+      }
+    }
+  };
+
+  const handleSignUpWithEmail = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(auth.currentUser);
+      const user = userCredential.user;
+      alert('Verification email sent! Please check your inbox. Ater verification, please sign in.');
+      if (!user.emailVerified) {
+        await auth.signOut();
+      }
+    } catch (error) {
+      alert('Error signing up, please try again.' + error.message);
+      console.error('Error signing up:', error);
+    }
+  };
+
+
   return (
-    <div className="app">
+    <div>
+          {user && <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
       {readerMode ? (
           <div>
-            <button onClick={handleBack}><FaArrowLeft /></button>
+            <button className="button" onClick={handleBack}><FaArrowLeft /></button>
             <p>{articles}</p>
           </div>
         ) : (
@@ -264,13 +318,13 @@ function App() {
           <button className="signoutbutton" onClick={handleSignOut}>
             <FaSignOutAlt />
           </button>
-          <button onClick={generateDocx}><FaFileWord /></button>
-          <button className='textbutton' onClick={generateText}><FaFileAlt /></button>
-          <button onClick={synthesizeSpeech}><img src="speak.png" style={{ width: '22px', height: '18px' }} /></button>
-          <button onClick={handleReaderMode}><FaReadme /></button>
+          <button className='button' onClick={generateDocx}><FaFileWord /></button>
+          <button className='button' onClick={generateText}><FaFileAlt /></button>
+          <button className='button' onClick={synthesizeSpeech}><FaHeadphones /></button>
+          <button className='button' onClick={handleReaderMode}><FaReadme /></button>
           <form onSubmit={handleAddTask}>
             <input
-              className="inputtextbox"
+              className="addTask"
               type="text"
               placeholder=""
               value={newTask}
@@ -333,9 +387,49 @@ function App() {
           )}
         </div>
       ) }
-      {!user && <button onClick={handleSignIn}>Sign In with Google</button>}
+    </div>}
+    {!user && <div style={{ fontSize: '22px', width: '100%', margin: '0 auto' }}>
+        <br />
+        <br />
+        <p>Sign In</p>
+        <input
+          className='textinput'
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <br />
+        <br />
+        <input
+          type="password"
+          className='textinput'
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <br />
+        <br />
+        <button className='signonpagebutton' onClick={() => handleSignInWithEmail()}>Sign In</button>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <button className='signuppagebutton' onClick={() => handleSignUpWithEmail()}>Sign Up</button>
+        <br />
+        <br />
+        <button onClick={() => handlePasswordReset()}>Forgot Password?</button>
+        <br />
+        <br />
+        <br />
+        <br />
+        <p> OR </p>
+        <br />
+        <button className='signgooglepagebutton' onClick={handleSignIn}>Sign In with Google</button>
+        <br />
+      </div>}
     </div>
-  );
+  )
 }
+
 
 export default App;
