@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEye, FaCheck, FaHeadphones, FaTrash, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
+import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, deleteDoc, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
@@ -315,13 +315,19 @@ function App() {
           </div>
         ) : (
         <div>
-          <button className="signoutbutton" onClick={handleSignOut}>
-            <FaSignOutAlt />
-          </button>
-          <button className='button' onClick={generateDocx}><FaFileWord /></button>
+              <button className={showCompleted ? 'button_selected' : 'button'} onClick={() => setShowCompleted(!showCompleted)}>
+                <FaCheckDouble />
+              </button>
+                        <button className='button' onClick={generateDocx}><FaFileWord /></button>
           <button className='button' onClick={generateText}><FaFileAlt /></button>
           <button className='button' onClick={synthesizeSpeech}><FaHeadphones /></button>
           <button className='button' onClick={handleReaderMode}><FaReadme /></button>
+          <button className="signoutbutton" onClick={handleSignOut}>
+            <FaSignOutAlt />
+          </button>
+          {!showCompleted && (
+                <div>
+
           <form onSubmit={handleAddTask}>
             <input
               className="addTask"
@@ -364,9 +370,8 @@ function App() {
                 </li>
               ))}
           </ul>
-          <button className='showcompletedbutton' onClick={() => setShowCompleted(!showCompleted)}>
-            <FaEye /> {showCompleted ? 'Hide' : 'Show'} Completed Tasks
-          </button>
+          </div>
+          )}
           {showCompleted && (
             <div>
               <h2>Completed Tasks</h2>
