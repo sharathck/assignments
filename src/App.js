@@ -363,7 +363,7 @@ function App() {
                       <button className='markcompletebutton' onClick={() => handleToggleStatus(task.id, task.status)}>
                         <FaCheck />
                       </button>
-                      <span>{task.task.substring(0,88)}</span>
+                      <span>{task.task}</span>
                     </>
                   )}
                 </li>
@@ -382,7 +382,7 @@ function App() {
                       <button onClick={() => handleToggleStatus(task.id, task.status)}>
                         <FaCheck />
                       </button>
-                      {task.task}
+                      {task.task.substring(0,88)}
                     </li>
                   ))}
               </ul>
