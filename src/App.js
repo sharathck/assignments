@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, deleteDoc, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
+import { getFirestore, doc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider } from 'firebase/auth';
 
 import { Readability } from '@mozilla/readability';
@@ -43,6 +43,9 @@ function App() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [lastVisible, setLastVisible] = useState(null);
+  const [lastArticle, setLastArticle] = useState(null);
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -57,7 +60,7 @@ function App() {
       const todoCollection = collection(db, 'todo');
       const urlParams = new URLSearchParams(window.location.search);
       const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 6;
+      const limitValue = limitParam ? parseInt(limitParam) : 2;
       //print limit value
       console.log('limit value: ', limitValue);
       const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', false), orderBy('createdDate', 'desc'), limit(limitValue));
@@ -67,6 +70,7 @@ function App() {
           ...doc.data(),
         }));
         articles += tasksData.map((task) => task.task).join(' ');
+        setLastArticle(snapshot.docs[snapshot.docs.length - 1]); // Set last visible document
         setTasks(tasksData);
       });
 
@@ -74,30 +78,24 @@ function App() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (user) {
-      const todoCollection = collection(db, 'todo');
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 6;
-      //print limit value
-      console.log('limit value: ', limitValue);
-      const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const completedTasksData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCompletedTasks(completedTasksData);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [user]);
 
   useEffect(() => {
     if (showCompleted) {
-      handleShowCompleted();
+      const tasksCollection = collection(db, 'todo');
+      const urlParams = new URLSearchParams(window.location.search);
+      const limitParam = urlParams.get('limit');
+      const limitValue = limitParam ? parseInt(limitParam) : 6;
+      const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const tasksData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        articles += tasksData.map((task) => task.task).join(' ');
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        setCompletedTasks(tasksData);
+      });
+      return () => unsubscribe();
     }
   }, [showCompleted]);
 
@@ -232,22 +230,6 @@ function App() {
     saveAs(blob, dateTime + ".txt");
   }
 
-  const handleShowCompleted = () => {
-    const todoCollection = collection(db, 'todo');
-    const urlParams = new URLSearchParams(window.location.search);
-    const limitParam = urlParams.get('limit');
-    const limitValue = limitParam ? parseInt(limitParam) : 31;
-    const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const completedTasksData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCompletedTasks(completedTasksData);
-    });
-
-    return () => unsubscribe();
-  };
   const handleReaderMode = () => {
     setReaderMode(true);
   };
@@ -304,95 +286,149 @@ function App() {
     }
   };
 
+  const fetchMoreData = async () => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const limitParam = urlParams.get('limit');
+      const limitValue = limitParam ? parseInt(limitParam) : 21;
+      const tasksCollection = collection(db, 'todo');
+
+      if (lastVisible) {
+        const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), startAfter(lastVisible), limit(limitValue));
+        const tasksSnapshot = await getDocs(q);
+        const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCompletedTasks(prevData => [...prevData, ...tasksList]);
+        setLastVisible(tasksSnapshot.docs[tasksSnapshot.docs.length - 1]);
+      }
+      else {
+        alert('No more data to fetch');
+      }
+    } catch (error) {
+      console.error("Error fetching more data: ", error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId, taskText) => {
+    const confirmation = window.confirm(`Are you sure you want to delete this task: ${taskText.substring(0, 30)}...?`);
+    if (confirmation) {
+      await deleteDoc(doc(db, 'todo', taskId));
+    }
+  };
+
+  const fetchMoreArticles = async () => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const limitParam = urlParams.get('limit');
+      const limitValue = limitParam ? parseInt(limitParam) : 6;
+      const tasksCollection = collection(db, 'todo');
+      if (lastArticle) {
+        const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', false), orderBy('createdDate', 'desc'), startAfter(lastArticle), limit(limitValue));
+        const tasksSnapshot = await getDocs(q);
+        const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTasks(prevData => [...prevData, ...tasksList]);
+        setLastArticle(tasksSnapshot.docs[tasksSnapshot.docs.length - 1]);
+      }
+      else {
+        alert('No more data to fetch');
+      }
+    } catch (error) {
+      console.error("Error fetching more data: ", error);
+    }
+  };
 
   return (
     <div>
-          {user && <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
-      {readerMode ? (
+      {user && <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
+        {readerMode ? (
           <div>
             <button className="button" onClick={handleBack}><FaArrowLeft /></button>
             <p>{articles}</p>
           </div>
         ) : (
-        <div>
-              <button className={showCompleted ? 'button_selected' : 'button'} onClick={() => setShowCompleted(!showCompleted)}>
-                <FaCheckDouble />
-              </button>
-                        <button className='button' onClick={generateDocx}><FaFileWord /></button>
-          <button className='button' onClick={generateText}><FaFileAlt /></button>
-          <button className='button' onClick={synthesizeSpeech}><FaHeadphones /></button>
-          <button className='button' onClick={handleReaderMode}><FaReadme /></button>
-          <button className="signoutbutton" onClick={handleSignOut}>
-            <FaSignOutAlt />
-          </button>
-          {!showCompleted && (
-                <div>
-
-          <form onSubmit={handleAddTask}>
-            <input
-              className="addTask"
-              type="text"
-              placeholder=""
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Shift') { handleAddTask(e); } }}
-              autoFocus
-            />
-            <button className="addbutton" type="submit">
-              <FaPlus />
+          <div>
+            <button className={showCompleted ? 'button_selected' : 'button'} onClick={() => setShowCompleted(!showCompleted)}>
+              <FaCheckDouble />
             </button>
-          </form>
-          <ul>
-            {tasks
-              .filter((task) => !task.status)
-              .map((task) => (
-                <li key={task.id}>
-                  {editTask === task.id ? (
-                    <form onSubmit={handleUpdateTask}>
-                      <input
-                        type="text"
-                        value={editTaskText}
-                        onChange={(e) => setEditTaskText(e.target.value)}
-                      />
-                      <button type="submit">
-                        <FaCheck />
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <button className='markcompletebutton' onClick={() => handleToggleStatus(task.id, task.status)}>
-                        <FaCheck />
-                      </button>
-                      <span>{task.task}</span>
-                    </>
-                  )}
-                </li>
-              ))}
-          </ul>
+            <button className='button' onClick={generateDocx}><FaFileWord /></button>
+            <button className='button' onClick={generateText}><FaFileAlt /></button>
+            <button className='button' onClick={synthesizeSpeech}><FaHeadphones /></button>
+            <button className='button' onClick={handleReaderMode}><FaReadme /></button>
+            <button className="signoutbutton" onClick={handleSignOut}>
+              <FaSignOutAlt />
+            </button>
+            {!showCompleted && (
+              <div>
+
+                <form onSubmit={handleAddTask}>
+                  <input
+                    className="addTask"
+                    type="text"
+                    placeholder=""
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Shift') { handleAddTask(e); } }}
+                    autoFocus
+                  />
+                  <button className="addbutton" type="submit">
+                    <FaPlus />
+                  </button>
+                </form>
+                <ul>
+                  {tasks
+                    .filter((task) => !task.status)
+                    .map((task) => (
+                      <li key={task.id}>
+                        {editTask === task.id ? (
+                          <form onSubmit={handleUpdateTask}>
+                            <input
+                              type="text"
+                              value={editTaskText}
+                              onChange={(e) => setEditTaskText(e.target.value)}
+                            />
+                            <button type="submit">
+                              <FaCheck />
+                            </button>
+                          </form>
+                        ) : (
+                          <>
+                            <button className='markcompletebutton' onClick={() => handleToggleStatus(task.id, task.status)}>
+                              <FaCheck />
+                            </button>
+                            <span>{task.task}</span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                </ul>
+                <button className="button" onClick={fetchMoreArticles}>Show More</button>
+              </div>
+            )}
+            {showCompleted && (
+              <div>
+                <h2>Completed Tasks</h2>
+                <ul>
+                  {completedTasks
+                    .filter((task) => task.status)
+                    .map((task) => (
+                      <li key={task.id} className="completed">
+                        <button onClick={() => handleToggleStatus(task.id, task.status)}>
+                          <FaCheck />
+                        </button>
+                        {task.task.substring(0, 88)}
+                        <button onClick={() => handleDeleteTask(task.id, task.task)} className='button_delete_selected'>
+                          <FaTrash />
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+                <button className="button" onClick={fetchMoreData}>Show More</button>
+                <div style={{ marginBottom: '110px' }}></div>
+              </div>
+            )}
           </div>
-          )}
-          {showCompleted && (
-            <div>
-              <h2>Completed Tasks</h2>
-              <ul>
-                {completedTasks
-                  .filter((task) => task.status)
-                  .map((task) => (
-                    <li key={task.id} className="completed">
-                      <button onClick={() => handleToggleStatus(task.id, task.status)}>
-                        <FaCheck />
-                      </button>
-                      {task.task.substring(0,88)}
-                    </li>
-                  ))}
-              </ul>
-              <div style={{ marginBottom: '110px' }}></div>
-            </div>
-          )}
-        </div>
-      ) }
-    </div>}
-    {!user && <div style={{ fontSize: '22px', width: '100%', margin: '0 auto' }}>
+        )}
+      </div>}
+      {!user && <div style={{ fontSize: '22px', width: '100%', margin: '0 auto' }}>
         <br />
         <br />
         <p>Sign In</p>
