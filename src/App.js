@@ -45,7 +45,10 @@ function App() {
   const [resetEmail, setResetEmail] = useState('');
   const [lastVisible, setLastVisible] = useState(null);
   const [lastArticle, setLastArticle] = useState(null);
-
+  const [answerData, setAnswerData] = useState('');
+  const [isGeneratingTTS, setIsGeneratingTTS] = useState(false);
+  const isiPhone = /iPhone/i.test(navigator.userAgent);
+  console.log(isiPhone);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -118,6 +121,10 @@ function App() {
   };
 
   const synthesizeSpeech = async () => {
+    if (isiPhone) {
+      callTTSAPI(articles, 'https://tts.happyrock-2dd71657.centralus.azurecontainerapps.io/');
+      return;
+    }
     const speechConfig = speechsdk.SpeechConfig.fromSubscription(speechKey, serviceRegion);
     speechConfig.speechSynthesisVoiceName = voiceName;
 
@@ -314,6 +321,56 @@ function App() {
       await deleteDoc(doc(db, 'todo', taskId));
     }
   };
+ 
+  // Function to call the TTS API
+  const callTTSAPI = async (message, appUrl) => {
+    let now = new Date();
+    console.log('before callTTS' + `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
+    setIsGeneratingTTS(true); // Set generating state
+    message = message.replace(/<[^>]*>?/gm, ''); // Remove HTML tags
+    message = message.replace(/&nbsp;/g, ' '); // Replace &nbsp; with space
+    // replace -,*,#,_,`,~,=,^,>,< with empty string
+    message = message.replace(/[-*#_`~=^><]/g, '');
+
+    console.log('Calling TTS API with message:', message);
+    console.log('Calling TTS API with appUrl:', appUrl);
+
+    try {
+      const response = await fetch(appUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: message, uid: uid })
+      });
+
+      if (!response.ok) {
+        throw new Error([`Network response was not ok: ${response.statusText}`]);
+      }
+    } catch (error) {
+      console.error('Error calling TTS API:', error);
+      alert([`Error: ${error.message}`]);
+    } finally {
+      // Fetch the Firebase document data
+      const genaiCollection = collection(db, 'genai', uid, 'MyGenAI');
+      let q = query(genaiCollection, orderBy('createdDateTime', 'desc'), limit(1));
+      const genaiSnapshot = await getDocs(q);
+      const genaiList = genaiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Get the answer from the first document
+      if (genaiList.length > 0) {
+        let answer = genaiList[0].answer;
+        //extract from the position where http starts and until end
+        answer = answer.substring(answer.indexOf('http'));
+        // replace ) with empty string
+        answer = answer.replace(')', '');
+        setAnswerData(answer);
+      }
+      setIsGeneratingTTS(false); // Reset generating state
+      now = new Date();
+    console.log('after callTTS' + `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
+    
+    }
+  };
 
   const fetchMoreArticles = async () => {
     try {
@@ -351,11 +408,18 @@ function App() {
             </button>
             <button className='button' onClick={generateDocx}><FaFileWord /></button>
             <button className='button' onClick={generateText}><FaFileAlt /></button>
-            <button className='button' onClick={synthesizeSpeech}><FaHeadphones /></button>
+            <button className={isGeneratingTTS ? 'button_selected' : 'button'} onClick={synthesizeSpeech}><FaHeadphones /></button>
             <button className='button' onClick={handleReaderMode}><FaReadme /></button>
             <button className="signoutbutton" onClick={handleSignOut}>
               <FaSignOutAlt />
             </button>
+            {isGeneratingTTS && <div> <br /> <p>Generating audio...</p> </div>}
+              {answerData && (
+                <div>
+                  <br />
+                  <a href={answerData} target="_blank" rel="noopener noreferrer">Play/Download</a>
+                </div>
+              )}
             {!showCompleted && (
               <div>
 
