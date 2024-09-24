@@ -28,7 +28,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-var articles = '';
+let articles = '';
+let uid = '';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -60,7 +61,8 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      const todoCollection = collection(db, 'todo');
+      const todoCollection = collection(db, 'todo')
+      uid = user.uid;
       const urlParams = new URLSearchParams(window.location.search);
       const limitParam = urlParams.get('limit');
       const limitValue = limitParam ? parseInt(limitParam) : 2;
