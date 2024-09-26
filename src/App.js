@@ -66,7 +66,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (user) {
       console.log('User:', 'Devansh');
       const todoCollection = collection(db, 'genai', 'Devansh', 'MyScoring');
       const scoreDoc = doc(todoCollection, 'final_score');
@@ -82,8 +81,7 @@ function App() {
         console.log("Error getting document:", error);
       });
       console.log('Total Score:', total_score);
-    }
-  }, [user]);
+  }, []);
 
 
 
@@ -199,7 +197,7 @@ function App() {
         <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontWeight: 'bold' }}>
-            <img src="Devansh.png" alt="Devansh" style={{ width: '80px', height: '80px', borderRadius: '50%',marginRight: '' }} />  Score : 
+            <img src="Devansh.png" alt="Devansh" style={{ width: '80px', height: '80px', borderRadius: '50%',marginRight: '' }} />  Points : 
               <span style={{  fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
               </span>
             </div>
