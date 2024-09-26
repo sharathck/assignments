@@ -45,7 +45,15 @@ function App() {
   const [activity80, setActivity80] = useState('No Nagging or Crying');
   const [activity90, setActivity90] = useState('Sleep by 9:00 PM');
   
+  const [reward10, setReward10] = useState('30 min Screentime');
+  const [reward20, setReward20] = useState('30 min Toys Time');
+  const [reward30, setReward30] = useState('30 min Outdoor Play');
+  const [reward40, setReward40] = useState('Pick Favorite Restaurant');
+  const [reward50, setReward50] = useState('No Homework for 1 Day');
+  const [reward60, setReward60] = useState('Play Date with Friends');
+
   const [history, setHistory] = useState([]);
+  const [isScorePopped, setIsScorePopped] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -142,6 +150,12 @@ function App() {
     updateDoc(scoreDoc, {
       score: totalScore + points
     });
+          // Trigger pop-out effect
+          setIsScorePopped(true);
+          setTimeout(() => {
+            setIsScorePopped(false);
+          }, 300); // Duration matches CSS transition
+    
     console.log('Total Score:', totalScore + points);
     const hisotryDetailsCollection = collection(db, 'genai', user.uid, 'MyScoring', 'history', 'details');
    // const activityDoc = doc(todoCollection);
@@ -182,7 +196,10 @@ function App() {
       {user &&
         <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 'bold' }}>Devansh's Score: <span style={{ fontSize: '44px' }}>{totalScore}</span></div>
+            <div style={{ fontWeight: 'bold' }}>Devansh's Score:
+            <label style={{ fontSize: '38px' }}>  <span  className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span> 
+            </label>
+            </div>
             <button 
             onClick={() => handleActivityClick('Deduct 10 Points', -10)} 
             style={{ 
@@ -252,7 +269,64 @@ function App() {
         <br />
         <br />
         <br />
-        <br />
+
+
+          {/* Rewards Section */}
+  <div className="rewards" style={{ marginTop: '20px' }}>
+    <h2>Rewards</h2>
+    <div className="rewards-buttons">
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward10, -50)}
+      >
+        {reward10}
+      </button>
+      </div>
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward20, -50)}
+      >
+        {reward20}
+      </button>
+      </div>
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward30, -50)}
+      >
+        {reward30}
+      </button>
+      </div>
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward40, -100)}
+      >
+        {reward40}
+      </button>
+      </div>
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward50, -30)}
+      >
+        {reward50}
+      </button>
+      </div>
+      <div>
+      <button
+        className='button reward-button'
+        onClick={() => handleActivityClick(reward60, -70)}
+      >
+        {reward60}
+      </button>
+      </div>
+    </div>
+  </div>
+
+  <br />
         <div>
           <button  onClick={() => showHistory()}>
             History of Activities
