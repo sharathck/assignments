@@ -1,18 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,unsubscribe} from 'react';
 import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
+import { getFirestore, doc,getDoc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider } from 'firebase/auth';
 
-import { Readability } from '@mozilla/readability';
-import { saveAs } from 'file-saver';
-import * as docx from 'docx';
-import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
-
-const speechKey = process.env.REACT_APP_AZURE_SPEECH_API_KEY;
-const serviceRegion = 'eastus';
-const voiceName = 'en-US-AvaNeural';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -30,26 +22,30 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 let articles = '';
 let uid = '';
+let total_score = 0;
 
 function App() {
   const [user, setUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
-  const [newTask, setNewTask] = useState('');
+  const [totalScore, setTotalScore] = useState(0);
   const [editTask, setEditTask] = useState(null);
   const [editTaskText, setEditTaskText] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [readerMode, setReaderMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [lastVisible, setLastVisible] = useState(null);
-  const [lastArticle, setLastArticle] = useState(null);
-  const [answerData, setAnswerData] = useState('');
-  const [isGeneratingTTS, setIsGeneratingTTS] = useState(false);
-  const isiPhone = /iPhone/i.test(navigator.userAgent);
-  console.log(isiPhone);
+  const [activity10, setActivity10] = useState('Wake Up Fresh and No Nagging');
+  const [activity20, setActivity20] = useState('Bath, Dress, Socks, Shoe');
+  const [activity30, setActivity30] = useState('LunchBox, Water Bottle, Snack, Folders');
+  const [activity40, setActivity40] = useState('Keep School Bag in Room and Lunch Box in Kitchen Sink');
+  const [activity50, setActivity50] = useState('Maths Homework for 30 minutes');
+  const [activity60, setActivity60] = useState('Read for 30 minutes');
+  const [activity70, setActivity70] = useState('Dishwasher and Clean Bed Room');
+  const [activity80, setActivity80] = useState('No Nagging or Crying');
+  const [activity90, setActivity90] = useState('Sleep by 9:00 PM');
+  
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -61,48 +57,25 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      const todoCollection = collection(db, 'todo')
-      uid = user.uid;
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 2;
-      //print limit value
-      console.log('limit value: ', limitValue);
-      const q = query(todoCollection, where('userId', '==', user.uid), where('status', '==', false), orderBy('createdDate', 'desc'), limit(limitValue));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const tasksData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        articles += tasksData.map((task) => task.task).join(' ');
-        setLastArticle(snapshot.docs[snapshot.docs.length - 1]); // Set last visible document
-        setTasks(tasksData);
+      console.log('User:', user.uid);
+      const todoCollection = collection(db, 'genai', user.uid, 'MyScoring');
+      const scoreDoc = doc(todoCollection, 'final_score');
+      getDoc(scoreDoc).then((doc) => {
+        if (doc.exists()) {
+          total_score = doc.data().score;
+          setTotalScore(total_score);
+          console.log('inside Doc Total Score:', total_score);
+        } else {
+          console.log("No such document!");
+        }
+      }).catch((error) => {
+        console.log("Error getting document:", error);
       });
-
-      return () => unsubscribe();
+      console.log('Total Score:', total_score);
     }
   }, [user]);
 
 
-  useEffect(() => {
-    if (showCompleted) {
-      const tasksCollection = collection(db, 'todo');
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 6;
-      const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), limit(limitValue));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const tasksData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        articles += tasksData.map((task) => task.task).join(' ');
-        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-        setCompletedTasks(tasksData);
-      });
-      return () => unsubscribe();
-    }
-  }, [showCompleted]);
 
   const handleSignIn = () => {
     const provider = new GoogleAuthProvider();
@@ -113,139 +86,6 @@ function App() {
     auth.signOut();
   };
 
-
-  const splitMessage = (msg, chunkSize = 4000) => {
-    const chunks = [];
-    for (let i = 0; i < msg.length; i += chunkSize) {
-      chunks.push(msg.substring(i, i + chunkSize));
-    }
-    return chunks;
-  };
-
-  const synthesizeSpeech = async () => {
-    if (isiPhone) {
-      callTTSAPI(articles, 'https://tts.happyrock-2dd71657.centralus.azurecontainerapps.io/');
-      return;
-    }
-    const speechConfig = speechsdk.SpeechConfig.fromSubscription(speechKey, serviceRegion);
-    speechConfig.speechSynthesisVoiceName = voiceName;
-
-    const audioConfig = speechsdk.AudioConfig.fromDefaultSpeakerOutput();
-    const speechSynthesizer = new speechsdk.SpeechSynthesizer(speechConfig, audioConfig);
-
-    const chunks = splitMessage(articles);
-    for (const chunk of chunks) {
-      try {
-        const result = await speechSynthesizer.speakTextAsync(chunk);
-        if (result.reason === speechsdk.ResultReason.SynthesizingAudioCompleted) {
-          console.log(`Speech synthesized to speaker for text: [${chunk}]`);
-        } else if (result.reason === speechsdk.ResultReason.Canceled) {
-          const cancellationDetails = speechsdk.SpeechSynthesisCancellationDetails.fromResult(result);
-          console.error(`Speech synthesis canceled: ${cancellationDetails.reason}`);
-          if (cancellationDetails.reason === speechsdk.CancellationReason.Error) {
-            console.error(`Error details: ${cancellationDetails.errorDetails}`);
-          }
-        }
-      } catch (error) {
-        console.error(`Error synthesizing speech: ${error}`);
-      }
-    }
-  };
-
-  const handleAddTask = async (e) => {
-    e.preventDefault();
-    if (newTask.trim() !== '') {
-      let textresponse = '';
-      if (newTask.substring(0, 4) == 'http') {
-        const urlWithoutProtocol = newTask.replace(/^https?:\/\//, '');
-        const response = await fetch('https://us-central1-reviewtext-ad5c6.cloudfunctions.net/function-9?url=' + newTask);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        // Initialize Readability with the document
-        const reader = new Readability(doc);
-        const article = reader.parse();
-        try {
-          textresponse = article.title + ' . ' + article.textContent;
-        }
-        catch (error) {
-          textresponse = error + '   Could not parse url : ' + newTask;
-        }
-      }
-      else {
-        textresponse = newTask;
-      }
-
-      await addDoc(collection(db, 'todo'), {
-        task: textresponse,
-        status: false,
-        userId: user.uid,
-        createdDate: new Date(),
-        uemail: user.email
-      });
-      setNewTask('');
-    }
-  };
-
-  const handleUpdateTask = async (taskId, newTaskText) => {
-    if (newTaskText.trim() !== '') {
-      const taskDocRef = doc(db, 'todo', taskId);
-      await updateDoc(taskDocRef, {
-        task: newTaskText,
-      });
-    }
-  };
-
-
-  const handleToggleStatus = async (taskId, status) => {
-    const taskDocRef = doc(db, 'todo', taskId);
-    await updateDoc(taskDocRef, {
-      status: !status,
-    });
-  };
-
-  const generateDocx = async () => {
-    const doc = new docx.Document({
-      sections: [{
-        properties: {},
-        children: [
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(articles),
-            ],
-          }),
-        ],
-      }]
-    });
-
-    docx.Packer.toBlob(doc).then(blob => {
-      console.log(blob);
-      const now = new Date();
-      const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-      const time = `${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
-      const dateTime = `${date}__${time}`;
-      saveAs(blob, dateTime + "_" + ".docx");
-      console.log("Document created successfully");
-    });
-  };
-
-
-  const generateText = async () => {
-    const blob = new Blob([articles], { type: "text/plain;charset=utf-8" });
-    const now = new Date();
-    const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-    const time = `${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
-    const dateTime = `${date}__${time}`;
-    saveAs(blob, dateTime + ".txt");
-  }
-
-  const handleReaderMode = () => {
-    setReaderMode(true);
-  };
-
-  const handleBack = () => {
-    setReaderMode(false);
-  };
 
   const handlePasswordReset = async () => {
     if (!email) {
@@ -295,205 +135,146 @@ function App() {
     }
   };
 
-  const fetchMoreData = async () => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 21;
-      const tasksCollection = collection(db, 'todo');
-
-      if (lastVisible) {
-        const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', true), orderBy('createdDate', 'desc'), startAfter(lastVisible), limit(limitValue));
-        const tasksSnapshot = await getDocs(q);
-        const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCompletedTasks(prevData => [...prevData, ...tasksList]);
-        setLastVisible(tasksSnapshot.docs[tasksSnapshot.docs.length - 1]);
-      }
-      else {
-        alert('No more data to fetch');
-      }
-    } catch (error) {
-      console.error("Error fetching more data: ", error);
-    }
+  const handleActivityClick = (activity, points = 10) => {
+    setTotalScore(prevScore => prevScore + points);
+    const todoCollection = collection(db, 'genai', user.uid, 'MyScoring');
+    const scoreDoc = doc(todoCollection, 'final_score');
+    updateDoc(scoreDoc, {
+      score: totalScore + points
+    });
+    console.log('Total Score:', totalScore + points);
+    const hisotryDetailsCollection = collection(db, 'genai', user.uid, 'MyScoring', 'history', 'details');
+   // const activityDoc = doc(todoCollection);
+    addDoc(hisotryDetailsCollection, {
+      activity: activity,
+      scoreBefore: totalScore,
+      scoreAfter: totalScore + 10,
+      timestamp: new Date()
+    }).then(() => {
+      console.log('Activity logged successfully');
+    }).catch((error) => {
+      console.error('Error logging activity:', error);
+    });
   };
 
-  const handleDeleteTask = async (taskId, taskText) => {
-    const confirmation = window.confirm(`Are you sure you want to delete this task: ${taskText.substring(0, 30)}...?`);
-    if (confirmation) {
-      await deleteDoc(doc(db, 'todo', taskId));
-    }
-  };
- 
-  // Function to call the TTS API
-  const callTTSAPI = async (message, appUrl) => {
-    let now = new Date();
-    console.log('before callTTS' + `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
-    setIsGeneratingTTS(true); // Set generating state
-    message = message.replace(/<[^>]*>?/gm, ''); // Remove HTML tags
-    message = message.replace(/&nbsp;/g, ' '); // Replace &nbsp; with space
-    // replace -,*,#,_,`,~,=,^,>,< with empty string
-    message = message.replace(/[-*#_`~=^><]/g, '');
-
-    console.log('Calling TTS API with message:', message);
-    console.log('Calling TTS API with appUrl:', appUrl);
-
-    try {
-      const response = await fetch(appUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: message, uid: uid })
-      });
-
-      if (!response.ok) {
-        throw new Error([`Network response was not ok: ${response.statusText}`]);
-      }
-    } catch (error) {
-      console.error('Error calling TTS API:', error);
-      alert([`Error: ${error.message}`]);
-    } finally {
-      // Fetch the Firebase document data
-      const genaiCollection = collection(db, 'genai', uid, 'MyGenAI');
-      let q = query(genaiCollection, orderBy('createdDateTime', 'desc'), limit(1));
-      const genaiSnapshot = await getDocs(q);
-      const genaiList = genaiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Get the answer from the first document
-      if (genaiList.length > 0) {
-        let answer = genaiList[0].answer;
-        //extract from the position where http starts and until end
-        answer = answer.substring(answer.indexOf('http'));
-        // replace ) with empty string
-        answer = answer.replace(')', '');
-        setAnswerData(answer);
-      }
-      setIsGeneratingTTS(false); // Reset generating state
-      now = new Date();
-    console.log('after callTTS' + `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
+  const showHistory = () => {
+    console.log('Show History');
+    const hisotryDetailsCollection = collection(db, 'genai', user.uid, 'MyScoring', 'history', 'details');
+    const historyQuery = query(hisotryDetailsCollection, orderBy('timestamp', 'desc'));
     
-    }
-  };
-
-  const fetchMoreArticles = async () => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const limitParam = urlParams.get('limit');
-      const limitValue = limitParam ? parseInt(limitParam) : 6;
-      const tasksCollection = collection(db, 'todo');
-      if (lastArticle) {
-        const q = query(tasksCollection, where('userId', '==', user.uid), where('status', '==', false), orderBy('createdDate', 'desc'), startAfter(lastArticle), limit(limitValue));
-        const tasksSnapshot = await getDocs(q);
-        const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTasks(prevData => [...prevData, ...tasksList]);
-        setLastArticle(tasksSnapshot.docs[tasksSnapshot.docs.length - 1]);
-      }
-      else {
-        alert('No more data to fetch');
-      }
-    } catch (error) {
-      console.error("Error fetching more data: ", error);
-    }
+    getDocs(historyQuery).then((querySnapshot) => {
+      const historyData = [];
+      querySnapshot.forEach((doc) => {
+        historyData.push(doc.data());
+       // console.log(doc.id, ' => ', doc.data());
+        console.log('Activity:', doc.data().activity);
+        console.log('Score:', doc.data().scoreBefore);
+        console.log('Timestamp:', doc.data().timestamp);
+      });
+      setHistory(historyData);
+    }).catch((error) => {
+      console.error('Error fetching history:', error);
+    });
   };
 
   return (
     <div>
-      {user && <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
-        {readerMode ? (
-          <div>
-            <button className="button" onClick={handleBack}><FaArrowLeft /></button>
-            <p>{articles}</p>
-          </div>
-        ) : (
-          <div>
-            <button className={showCompleted ? 'button_selected' : 'button'} onClick={() => setShowCompleted(!showCompleted)}>
-              <FaCheckDouble />
+      {user &&
+        <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontWeight: 'bold' }}>Devansh's Score: <span style={{ fontSize: '44px' }}>{totalScore}</span></div>
+            <button 
+            onClick={() => handleActivityClick('Deduct 10 Points', -10)} 
+            style={{ 
+              backgroundColor: 'red', 
+              color: 'white', 
+              border: 'none',
+              padding: '10px 20px',
+              marginRight: '10px',
+              cursor: 'pointer',
+              borderRadius: '5px'
+            }}
+          >
+            -10
+          </button>
+            <button onClick={handleSignOut} className='signoutbutton'>
+              <FaSignOutAlt /> Sign Out
             </button>
-            <button className='button' onClick={generateDocx}><FaFileWord /></button>
-            <button className='button' onClick={generateText}><FaFileAlt /></button>
-            <button className={isGeneratingTTS ? 'button_selected' : 'button'} onClick={synthesizeSpeech}><FaHeadphones /></button>
-            <button className='button' onClick={handleReaderMode}><FaReadme /></button>
-            <button className="signoutbutton" onClick={handleSignOut}>
-              <FaSignOutAlt />
-            </button>
-            {isGeneratingTTS && <div> <br /> <p>Generating audio...</p> </div>}
-              {answerData && (
-                <div>
-                  <br />
-                  <a href={answerData} target="_blank" rel="noopener noreferrer">Play/Download</a>
-                </div>
-              )}
-            {!showCompleted && (
-              <div>
-
-                <form onSubmit={handleAddTask}>
-                  <input
-                    className="addTask"
-                    type="text"
-                    placeholder=""
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Shift') { handleAddTask(e); } }}
-                    autoFocus
-                  />
-                  <button className="addbutton" type="submit">
-                    <FaPlus />
-                  </button>
-                </form>
-                <ul>
-                  {tasks
-                    .filter((task) => !task.status)
-                    .map((task) => (
-                      <li key={task.id}>
-                        {editTask === task.id ? (
-                          <form onSubmit={handleUpdateTask}>
-                            <input
-                              type="text"
-                              value={editTaskText}
-                              onChange={(e) => setEditTaskText(e.target.value)}
-                            />
-                            <button type="submit">
-                              <FaCheck />
-                            </button>
-                          </form>
-                        ) : (
-                          <>
-                            <button className='markcompletebutton' onClick={() => handleToggleStatus(task.id, task.status)}>
-                              <FaCheck />
-                            </button>
-                            <span>{task.task}</span>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                </ul>
-                <button className="button" onClick={fetchMoreArticles}>Show More</button>
-              </div>
-            )}
-            {showCompleted && (
-              <div>
-                <h2>Completed Tasks</h2>
-                <ul>
-                  {completedTasks
-                    .filter((task) => task.status)
-                    .map((task) => (
-                      <li key={task.id} className="completed">
-                        <button onClick={() => handleToggleStatus(task.id, task.status)}>
-                          <FaCheck />
-                        </button>
-                        {task.task.substring(0, 88)}
-                        <button onClick={() => handleDeleteTask(task.id, task.task)} className='button_delete_selected'>
-                          <FaTrash />
-                        </button>
-                      </li>
-                    ))}
-                </ul>
-                <button className="button" onClick={fetchMoreData}>Show More</button>
-                <div style={{ marginBottom: '110px' }}></div>
-              </div>
-            )}
+            <br />
+            <br />
+            <br />
           </div>
-        )}
-      </div>}
+          <div className="activities">
+          <button className='button' onClick={() => handleActivityClick(activity10)}>
+            {activity10}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity20)}>
+            {activity20}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity30)}>
+            {activity30}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity40)}>
+            {activity40}
+          </button>
+        </div>
+        <div>
+          <button className='button large-font' onClick={() => handleActivityClick(activity50, 30)}>
+            {activity50}
+          </button>
+        </div>
+        <div>
+          <button className='button large-font' onClick={() => handleActivityClick(activity60, 30)}>
+            {activity60}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity70)}>
+            {activity70}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity80)}>
+            {activity80}
+          </button>
+        </div>
+        <div>
+          <button className='button' onClick={() => handleActivityClick(activity90)}>
+            {activity90}
+          </button>
+        </div>
+        <br />
+        <br />
+        <br />
+        <br />
+        <div>
+          <button  onClick={() => showHistory()}>
+            History of Activities
+          </button>
+        </div>
+                {/* Display History */}
+                <div className="history">
+          {history.length > 0 ? (
+            history.map((item, index) => (
+              <div key={index} className="history-item">
+                <p> ----------------------------------</p>
+                <p><strong>Activity:</strong> {item.activity}</p>
+                <p><strong>Score Before:</strong> {item.scoreBefore}</p>
+                <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
+              </div>
+            ))
+          ) : (
+            <p></p>
+          )}
+        </div>
+          </div>
+       }
       {!user && <div style={{ fontSize: '22px', width: '100%', margin: '0 auto' }}>
         <br />
         <br />
