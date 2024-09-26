@@ -164,8 +164,8 @@ function App() {
     // const activityDoc = doc(todoCollection);
     addDoc(hisotryDetailsCollection, {
       activity: activity,
-      scoreBefore: totalScore,
-      scoreAfter: totalScore + 10,
+      points: points,
+      scoreAfter: totalScore + points,
       timestamp: new Date()
     }).then(() => {
       console.log('Activity logged successfully');
@@ -185,7 +185,7 @@ function App() {
         historyData.push(doc.data());
         // console.log(doc.id, ' => ', doc.data());
         console.log('Activity:', doc.data().activity);
-        console.log('Score:', doc.data().scoreBefore);
+        console.log('Score:', doc.data().scoreAfter);
         console.log('Timestamp:', doc.data().timestamp);
       });
       setHistory(historyData);
@@ -350,9 +350,9 @@ function App() {
             {history.length > 0 ? (
               history.map((item, index) => (
                 <div key={index} className="history-item">
-                  <p> ----------------------------------</p>
                   <p><strong>Activity:</strong> {item.activity}</p>
-                  <p><strong>Score Before:</strong> {item.scoreBefore}</p>
+                  <p><strong>Points:</strong> {item.points}</p>
+                  <p><strong>Score:</strong> {item.scoreAfter}</p>
                   <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
                 </div>
               ))
