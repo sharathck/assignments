@@ -21,38 +21,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const userName = process.env.REACT_APP_USER_NAME;
 let uid = '';
 let total_score = 0;
 
 function App() {
+  console.log('User Name:', userName);
   const [user, setUser] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [completedTasks, setCompletedTasks] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [rewards, setRewards] = useState([]);
+  const [punishments, setPunishments] = useState([]);
   const [totalScore, setTotalScore] = useState(0);
-  const [editTask, setEditTask] = useState(null);
-  const [editTaskText, setEditTaskText] = useState('');
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [readerMode, setReaderMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activity10, setActivity10] = useState('Wake Up Fresh and No Nagging');
-  const [activity20, setActivity20] = useState('Bath, Dress, Socks, Shoe');
-  const [activity30, setActivity30] = useState('LunchBox, Water Bottle, Snack, Folders');
-  const [activity40, setActivity40] = useState('Keep School Bag in Room and Lunch Box in Kitchen Sink');
-  const [activity50, setActivity50] = useState('Maths');
-  const [activity60, setActivity60] = useState('Read');
-  const [activity70, setActivity70] = useState('Dishwasher and Clean Bed Room');
-  const [activity80, setActivity80] = useState('No Nagging or Crying');
-  const [activity90, setActivity90] = useState('Sleep by 9:00 PM');
+  const [badbehavior10, setBadBehavior10] = useState('Bad Behavior(-10)');
 
-  const [reward10, setReward10] = useState('100 Points - Screentime (+30 min)');
-  const [reward20, setReward20] = useState('100 Points - Toys Time (+30 min)');
-  const [reward30, setReward30] = useState('100 Points - Outdoor Play (+30 min)');
-  const [reward40, setReward40] = useState('300 Points - No Homework for 1 Day');
-  const [reward50, setReward50] = useState('400 Points - Pick Favorite Restaurant');
-  const [reward60, setReward60] = useState('500 Points - Play Date with Friends');
-  const [reward70, setReward70] = useState('990 Points - Buy a Toy');
-  
 
   const [history, setHistory] = useState([]);
   const [isScorePopped, setIsScorePopped] = useState(false);
@@ -66,23 +49,41 @@ function App() {
   }, []);
 
   useEffect(() => {
-      console.log('User:', 'Devansh');
-      const todoCollection = collection(db, 'genai', 'Devansh', 'MyScoring');
-      const scoreDoc = doc(todoCollection, 'final_score');
-      getDoc(scoreDoc).then((doc) => {
-        if (doc.exists()) {
-          total_score = doc.data().score;
-          setTotalScore(total_score);
-          console.log('inside Doc Total Score:', total_score);
-        } else {
-          console.log("No such document!");
-        }
-      }).catch((error) => {
-        console.log("Error getting document:", error);
-      });
-      console.log('Total Score:', total_score);
-  }, []);
+    const todoCollection = collection(db, 'genai', userName, 'MyScoring');
+    const scoreDocRef = doc(todoCollection, 'final_score');
 
+    getDoc(scoreDocRef)
+      .then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          total_score = data.score || 0;
+          setTotalScore(total_score);
+
+          if (Array.isArray(data.activities)) {
+            setActivities(data.activities);
+          } else {
+            console.log('No activities array found in final_score document.');
+          }
+          if (Array.isArray(data.rewards)) {
+            setRewards(data.rewards);
+          }
+          else {
+            console.log('No rewards array found in final_score document.');
+          }
+          if (Array.isArray(data.punishments)) {
+            setPunishments(data.punishments);
+          }
+          else {
+            console.log('No punishments array found in final_score document.');
+          }
+        } else {
+          console.log('No such document!');
+        }
+      })
+      .catch((error) => {
+        console.log('Error getting document:', error);
+      });
+  }, []);
 
 
   const handleSignIn = () => {
@@ -143,9 +144,12 @@ function App() {
     }
   };
 
-  const handleActivityClick = (activity, points = 10) => {
+
+  const handleActivityClick = (activity) => {
+    const points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
+    console.log('Points:', points);
     setTotalScore(prevScore => prevScore + points);
-    const todoCollection = collection(db, 'genai', 'Devansh', 'MyScoring');
+    const todoCollection = collection(db, 'genai', userName, 'MyScoring');
     const scoreDoc = doc(todoCollection, 'final_score');
     updateDoc(scoreDoc, {
       score: totalScore + points
@@ -157,7 +161,35 @@ function App() {
     }, 300); // Duration matches CSS transition
 
     console.log('Total Score:', totalScore + points);
-    const hisotryDetailsCollection = collection(db, 'genai', 'Devansh', 'MyScoring', 'history', 'details');
+    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
+    // const activityDoc = doc(todoCollection);
+    addDoc(hisotryDetailsCollection, {
+      activity: activity,
+      points: points,
+      scoreAfter: totalScore + points,
+      timestamp: new Date()
+    }).then(() => {
+      console.log('Activity logged successfully');
+    }).catch((error) => {
+      console.error('Error logging activity:', error);
+    });
+  };
+
+  const oldhandleActivityClick = (activity, points = 10) => {
+    setTotalScore(prevScore => prevScore + points);
+    const todoCollection = collection(db, 'genai', userName, 'MyScoring');
+    const scoreDoc = doc(todoCollection, 'final_score');
+    updateDoc(scoreDoc, {
+      score: totalScore + points
+    });
+    // Trigger pop-out effect
+    setIsScorePopped(true);
+    setTimeout(() => {
+      setIsScorePopped(false);
+    }, 300); // Duration matches CSS transition
+
+    console.log('Total Score:', totalScore + points);
+    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
     // const activityDoc = doc(todoCollection);
     addDoc(hisotryDetailsCollection, {
       activity: activity,
@@ -173,7 +205,7 @@ function App() {
 
   const showHistory = () => {
     console.log('Show History');
-    const hisotryDetailsCollection = collection(db, 'genai', 'Devansh', 'MyScoring', 'history', 'details');
+    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
     const historyQuery = query(hisotryDetailsCollection, orderBy('timestamp', 'desc'));
 
     getDocs(historyQuery).then((querySnapshot) => {
@@ -193,209 +225,72 @@ function App() {
 
   return (
     <div>
-      {1 == 1 &&
-        <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
+      <div className="fixed-header">
+        <div className="app" style={{ fontSize: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontWeight: 'bold' }}>
-            <img src="Devansh.png" alt="Devansh" style={{ width: '80px', height: '80px', borderRadius: '50%',marginRight: '' }} />  Points : 
-              <span style={{  fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
+              <img src={`${userName}.png`} alt={userName} style={{ width: '80px', height: '80px', borderRadius: '50%', marginRight: '' }} />  Points :
+              <span style={{ fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
               </span>
             </div>
             <br />
             <br />
             <br />
           </div>
-          <div className="activities">
-            <button className='button' onClick={() => handleActivityClick(activity10)}>
-              {activity10}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity20)}>
-              {activity20}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity30)}>
-              {activity30}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity40)}>
-              {activity40}
-            </button>
-          </div>
-          <div>
-            <button className='button large-font' onClick={() => handleActivityClick(activity50, 30)}>
-             +30 Points - {activity50}
-            </button>
-          </div>
-          <div>
-            <button className='button large-font' onClick={() => handleActivityClick(activity60, 30)}>
-            +30 Points - {activity60}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity70)}>
-              {activity70}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity80)}>
-              {activity80}
-            </button>
-          </div>
-          <div>
-            <button className='button' onClick={() => handleActivityClick(activity90)}>
-              {activity90}
-            </button>
-          </div>
-          <br />
-          <br />
-          <br />
-
-
-          {/* Rewards Section */}
-          <div className="rewards" style={{ marginTop: '20px' }}>
-            <h2>Rewards</h2>
-            <div className="rewards-buttons">
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward10, -100)}
-                >
-                  {reward10}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward20, -100)}
-                >
-                  {reward20}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward30, -100)}
-                >
-                  {reward30}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward40, -300)}
-                >
-                  {reward40}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward50, -400)}
-                >
-                  {reward50}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward60, -500)}
-                >
-                  {reward60}
-                </button>
-              </div>
-              <div>
-                <button
-                  className='button reward-button'
-                  onClick={() => handleActivityClick(reward70, -990)}
-                >
-                  {reward70}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <br />
-          <br />
-          <button
-              onClick={() => handleActivityClick('Bad behavior : 10 Points', -10)}
-              style={{
-                backgroundColor: 'lightcoral',
-                fontSize : '22px',
-                color: 'white',
-                border: 'none',
-                padding: '10px 20px',
-                marginRight: '10px',
-                cursor: 'pointer',
-                borderRadius: '5px'
-              }}
-            >
-              Bad behavior : 10 Points
-            </button>
-            <br />
-            <br />
-            <br />
-          <div>
-            <button style = {{fontSize : '25px'}} onClick={() => showHistory()}>
-              History of Activities
-            </button>
-          </div>
-          {/* Display History */}
-          <div className="history">
-            {history.length > 0 ? (
-              history.map((item, index) => (
-                <div key={index} className="history-item">
-                  <p><strong>Activity:</strong> {item.activity}</p>
-                  <p><strong>Points:</strong> {item.points}</p>
-                  <p><strong>Score:</strong> {item.scoreAfter}</p>
-                  <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
-                </div>
-              ))
-            ) : (
-              <p></p>
-            )}
-          </div>
         </div>
-      }
-      {!user && 1 == 2 && <div style={{ fontSize: '22px', width: '100%', margin: '0 auto' }}>
+      </div>
+      <div className="content">
+        <div className="activities">
+          {activities.map((activity, index) => (
+            <div key={index}>
+              <button className="button" onClick={() => handleActivityClick(activity)}>
+                {activity}
+              </button>
+            </div>
+          ))}
+        </div>
         <br />
         <br />
-        <p>Sign In</p>
-        <input
-          className='textinput'
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <br />
-        <br />
-        <input
-          type="password"
-          className='textinput'
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <br />
-        <br />
-        <button className='signonpagebutton' onClick={() => handleSignInWithEmail()}>Sign In</button>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <button className='signuppagebutton' onClick={() => handleSignUpWithEmail()}>Sign Up</button>
-        <br />
-        <br />
-        <button onClick={() => handlePasswordReset()}>Forgot Password?</button>
-        <br />
-        <br />
-        <button className='signonpagebutton' onClick={() => handleSignIn()}>Sign In with Google</button>
-        <br />
-      </div>}
+        {rewards.map((reward, index) => (
+          <div key={index}>
+            <button className="button reward-button" onClick={() => handleActivityClick(reward)}>
+              {reward}
+            </button>
+          </div>
+        ))}
+      </div>
+      <br />
+      <br />
+      <div className="activities">
+        {punishments.map((punishment, index) => (
+          <div key={index}>
+            <button className="button punishmentbutton" onClick={() => handleActivityClick(punishment)}>
+              {punishment}
+            </button>
+          </div>
+        ))}
+      </div>
+      <br />
+      <br />
+      <div>
+        <button style={{ fontSize: '29px' }} onClick={() => showHistory()}>
+          History of Activities
+        </button>
+      </div>
+      {/* Display History */}
+      <div className="history">
+        {history.length > 0 ? (
+          history.map((item, index) => (
+            <div key={index} className="history-item">
+              <p><strong>Activity:</strong> {item.activity}</p>
+              <p><strong>Score:</strong> {item.scoreAfter}</p>
+              <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
+            </div>
+          ))
+        ) : null}
+      </div>
     </div>
+
   )
 }
 
