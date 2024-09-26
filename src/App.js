@@ -198,9 +198,10 @@ function App() {
       {1 == 1 &&
         <div className="app" style={{ marginBottom: '120px', fontSize: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 'bold' }}>Devansh's Score:
-              <div style={{ margin: '20px', fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
-              </div>
+            <div style={{ fontWeight: 'bold' }}>
+            <img src="Devansh.png" alt="Devansh" style={{ width: '80px', height: '80px', borderRadius: '50%',marginRight: '' }} />  Score : 
+              <span style={{  fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
+              </span>
             </div>
             <br />
             <br />
