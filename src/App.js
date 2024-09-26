@@ -40,18 +40,20 @@ function App() {
   const [activity20, setActivity20] = useState('Bath, Dress, Socks, Shoe');
   const [activity30, setActivity30] = useState('LunchBox, Water Bottle, Snack, Folders');
   const [activity40, setActivity40] = useState('Keep School Bag in Room and Lunch Box in Kitchen Sink');
-  const [activity50, setActivity50] = useState('Maths Homework for 30 minutes');
-  const [activity60, setActivity60] = useState('Read for 30 minutes');
+  const [activity50, setActivity50] = useState('Maths');
+  const [activity60, setActivity60] = useState('Read');
   const [activity70, setActivity70] = useState('Dishwasher and Clean Bed Room');
   const [activity80, setActivity80] = useState('No Nagging or Crying');
   const [activity90, setActivity90] = useState('Sleep by 9:00 PM');
 
-  const [reward10, setReward10] = useState('30 min Screentime');
-  const [reward20, setReward20] = useState('30 min Toys Time');
-  const [reward30, setReward30] = useState('30 min Outdoor Play');
-  const [reward40, setReward40] = useState('Pick Favorite Restaurant');
-  const [reward50, setReward50] = useState('No Homework for 1 Day');
-  const [reward60, setReward60] = useState('Play Date with Friends');
+  const [reward10, setReward10] = useState('100 Points - Screentime (+30 min)');
+  const [reward20, setReward20] = useState('100 Points - Toys Time (+30 min)');
+  const [reward30, setReward30] = useState('100 Points - Outdoor Play (+30 min)');
+  const [reward40, setReward40] = useState('300 Points - No Homework for 1 Day');
+  const [reward50, setReward50] = useState('400 Points - Pick Favorite Restaurant');
+  const [reward60, setReward60] = useState('500 Points - Play Date with Friends');
+  const [reward70, setReward70] = useState('990 Points - Buy a Toy');
+  
 
   const [history, setHistory] = useState([]);
   const [isScorePopped, setIsScorePopped] = useState(false);
@@ -227,12 +229,12 @@ function App() {
           </div>
           <div>
             <button className='button large-font' onClick={() => handleActivityClick(activity50, 30)}>
-              {activity50}
+             +30 Points - {activity50}
             </button>
           </div>
           <div>
             <button className='button large-font' onClick={() => handleActivityClick(activity60, 30)}>
-              {activity60}
+            +30 Points - {activity60}
             </button>
           </div>
           <div>
@@ -262,7 +264,7 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward10, -50)}
+                  onClick={() => handleActivityClick(reward10, -100)}
                 >
                   {reward10}
                 </button>
@@ -270,7 +272,7 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward20, -50)}
+                  onClick={() => handleActivityClick(reward20, -100)}
                 >
                   {reward20}
                 </button>
@@ -278,7 +280,7 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward30, -50)}
+                  onClick={() => handleActivityClick(reward30, -100)}
                 >
                   {reward30}
                 </button>
@@ -286,7 +288,7 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward40, -100)}
+                  onClick={() => handleActivityClick(reward40, -300)}
                 >
                   {reward40}
                 </button>
@@ -294,7 +296,7 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward50, -30)}
+                  onClick={() => handleActivityClick(reward50, -400)}
                 >
                   {reward50}
                 </button>
@@ -302,9 +304,17 @@ function App() {
               <div>
                 <button
                   className='button reward-button'
-                  onClick={() => handleActivityClick(reward60, -70)}
+                  onClick={() => handleActivityClick(reward60, -500)}
                 >
                   {reward60}
+                </button>
+              </div>
+              <div>
+                <button
+                  className='button reward-button'
+                  onClick={() => handleActivityClick(reward70, -990)}
+                >
+                  {reward70}
                 </button>
               </div>
             </div>

@@ -22,7 +22,7 @@ color: orange;
   font-size: 28px;
 }
 .large-font {
-  font-size: 42px; /* Adjust the size as needed */
+  font-size: 40px; /* Adjust the size as needed */
 }
 .button_selected {
   padding: 2px 2px;
@@ -219,9 +219,10 @@ form {
 
 /* Reward button specific styles */
 .reward-button {
-  background-color: rgb(209, 225, 231);
-  color: rgb(48, 54, 137);
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  background-color: rgb(235, 241, 244);
+  color: rgb(28, 34, 120);
+  padding: 10px 20px;
+  box-shadow: 2px 2px 5px rgba(24, 12, 12, 0.3);
 }
 
 .reward-button:hover {
