@@ -145,8 +145,12 @@ function App() {
   };
 
 
-  const handleActivityClick = (activity) => {
-    const points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
+  const handleActivityClick = (activity, revert=0) => {
+    let points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
+    if (revert > 0) {
+      points = -points;
+      activity = 'UNDO ' + activity;
+    }
     console.log('Points:', points);
     setTotalScore(prevScore => prevScore + points);
     const todoCollection = collection(db, 'genai', userName, 'MyScoring');
@@ -285,6 +289,7 @@ function App() {
               <p><strong>Activity:</strong> {item.activity}</p>
               <p><strong>Score:</strong> {item.scoreAfter}</p>
               <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
+              <p><button onClick={() => handleActivityClick(item.activity,1)}>Undo</button></p>
             </div>
           ))
         ) : null}
