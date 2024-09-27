@@ -247,7 +247,7 @@ function App() {
         <div className="activities">
           {activities.map((activity, index) => (
             <div key={index}>
-              <button className="button" onClick={(e) => { handleActivityClick(activity); e.target.classList.add('clicked'); setTimeout(() => {
+              <button className="button" style= {{background: process.env.REACT_APP_BACKGROUND_COLOR}} onClick={(e) => { handleActivityClick(activity); e.target.classList.add('clicked'); setTimeout(() => {
                 e.target.classList.remove('clicked');
               }, 400); }}>
                 {activity}
