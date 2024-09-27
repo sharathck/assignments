@@ -32,6 +32,7 @@ color: orange;
   box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
   cursor: pointer;
   font-size: 28px;
+  border-radius: 5px;
 }
 .button:hover {
   opacity: 0.8;
@@ -243,7 +244,7 @@ form {
   background-color: rgb(235, 241, 244);
   color: rgb(28, 34, 120);
   padding: 10px 20px;
-  box-shadow: 2px 2px 5px rgba(24, 12, 12, 0.3);
+  box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
 }
 
 .reward-button:hover {
@@ -252,7 +253,7 @@ form {
 
 /* Total Score styles */
 .score {
-  transition: transform 0.4s ease, font-size 0.4s ease;
+  transition: font-size 0.4s ease;
 }
 
 .score-popped {
@@ -265,14 +266,35 @@ form {
 }
 
 .punishmentbutton {
-  background-color: lightcoral;
-  font-size: 22px;
-  color: white;
+  background-color: rgb(247, 156, 156);
+  font-size: 24px;
+  color: rgb(68, 8, 8);
   border: none;
   padding: 10px 20px;
   margin-right: 10px;
   cursor: pointer;
   border-radius: 5px;
-  box-shadow: 2px 2px 5px rgba(24, 12, 12, 0.3);
+  box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
+}
 
+.historybutton {
+  padding: 2px 2px;
+  margin-left: 2px;
+  margin-bottom: 15px;
+  background-color: #d8ecbc;
+  color: rgb(1, 17, 7);
+  box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.undobutton {
+  padding: 2px 2px;
+  margin-left: 2px;
+  margin-bottom: 15px;
+  background-color: #840404;
+  color: rgb(246, 248, 250);
+  box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
+  cursor: pointer;
+  font-size: 22px;
 }

@@ -247,7 +247,9 @@ function App() {
         <div className="activities">
           {activities.map((activity, index) => (
             <div key={index}>
-              <button className="button" onClick={() => handleActivityClick(activity)}>
+              <button className="button" onClick={(e) => { handleActivityClick(activity); e.target.classList.add('clicked'); setTimeout(() => {
+                e.target.classList.remove('clicked');
+              }, 400); }}>
                 {activity}
               </button>
             </div>
@@ -257,7 +259,10 @@ function App() {
         <br />
         {rewards.map((reward, index) => (
           <div key={index}>
-            <button className="button reward-button" onClick={() => handleActivityClick(reward)}>
+            <button className="button reward-button" onClick={(e) => { handleActivityClick(reward); e.target.classList.add('clicked'); setTimeout(() => {
+                e.target.classList.remove('clicked');
+              }, 400); }}
+              >
               {reward}
             </button>
           </div>
@@ -268,7 +273,9 @@ function App() {
       <div className="activities">
         {punishments.map((punishment, index) => (
           <div key={index}>
-            <button className="button punishmentbutton" onClick={() => handleActivityClick(punishment)}>
+            <button className="button punishmentbutton" onClick={(e) => { handleActivityClick(punishment); e.target.classList.add('clicked'); setTimeout(() => {
+                e.target.classList.remove('clicked');
+              }, 400); }}>
               {punishment}
             </button>
           </div>
@@ -277,7 +284,9 @@ function App() {
       <br />
       <br />
       <div>
-        <button style={{ fontSize: '29px' }} onClick={() => showHistory()}>
+        <button className="historybutton" style={{ fontSize: '29px' }} onClick={(e) => {showHistory();
+        e.target.classList.add('clicked'); e.target.classList.add('clicked'); setTimeout(() => {e.target.classList.remove('clicked');}, 400);} }
+          >
           History of Activities
         </button>
       </div>
@@ -289,13 +298,14 @@ function App() {
               <p><strong>Activity:</strong> {item.activity}</p>
               <p><strong>Score:</strong> {item.scoreAfter}</p>
               <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
-              <p><button onClick={() => handleActivityClick(item.activity,1)}>Undo</button></p>
+              <p><button className="undobutton" onClick={(e) => { handleActivityClick(item.activity, 1); e.target.classList.add('clicked'); e.target.classList.add('clicked'); setTimeout(() => {
+                e.target.classList.remove('clicked');
+              }, 400); }}>Undo</button></p>
             </div>
           ))
         ) : null}
       </div>
     </div>
-
   )
 }
 
