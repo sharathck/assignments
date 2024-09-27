@@ -33,6 +33,15 @@ color: orange;
   cursor: pointer;
   font-size: 28px;
 }
+.button:hover {
+  opacity: 0.8;
+}
+
+/* Clicked button animation */
+.clicked {
+  transform: scale(0.8);
+}
+
 .large-font {
   font-size: 40px; /* Adjust the size as needed */
 }
