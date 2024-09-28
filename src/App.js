@@ -34,6 +34,7 @@ function App() {
   const [showUserOptions, setShowUserOptions] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#756060');
   const [faviconPath, setFaviconPath] = useState('/favicon.ico'); // Default favicon
+  const [isHistoryVisible, setIsHistoryVisible] = useState(false); // New state to track history visibility
 
   useEffect(() => {
     // Update faviconPath whenever userName changes
@@ -98,6 +99,12 @@ function App() {
       });
   }, [userName]);
 
+  // Clear history when userName changes
+  useEffect(() => {
+    setHistory([]); // Clear history state
+    setIsHistoryVisible(false); // Hide history when user changes
+  }, [userName]);
+
   const handleActivityClick = (activity, revert = 0) => {
     let points;
     try {
@@ -141,6 +148,7 @@ function App() {
       });
   };
 
+  // Modify the showHistory function
   const showHistory = () => {
     console.log('Show History');
     const historyDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
@@ -156,11 +164,19 @@ function App() {
           console.log('Timestamp:', doc.data().timestamp);
         });
         setHistory(historyData);
+        setIsHistoryVisible(true); // Set history visibility to true
       })
       .catch((error) => {
         console.error('Error fetching history:', error);
       });
   };
+
+  // Optionally, fetch history when userName changes and history is visible
+  useEffect(() => {
+    if (isHistoryVisible) {
+      showHistory();
+    }
+  }, [userName]);
 
   // Handle user change
   const handleUserChange = (selectedUser) => {
@@ -287,9 +303,10 @@ function App() {
       </div>
 
       {/* Display History */}
-      <div className="history">
-        {history.length > 0
-          ? history.map((item, index) => (
+      {isHistoryVisible && (
+        <div className="history">
+          {history.length > 0 ? (
+            history.map((item, index) => (
               <div key={index} className="history-item">
                 <p>
                   <strong>Activity:</strong> {item.activity}
@@ -298,7 +315,8 @@ function App() {
                   <strong>Score:</strong> {item.scoreAfter}
                 </p>
                 <p>
-                  <strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}
+                  <strong>Timestamp:</strong>{' '}
+                  {new Date(item.timestamp.seconds * 1000).toLocaleString()}
                 </p>
                 <p>
                   <button
@@ -316,8 +334,11 @@ function App() {
                 </p>
               </div>
             ))
-          : null}
-      </div>
+          ) : (
+            <p>No history available.</p>
+          )}
+        </div>
+      )}
       <div>
         <button
           className="historybutton"
