@@ -1,11 +1,10 @@
-import React, { useState, useEffect, unsubscribe } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock, FaFont } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider } from 'firebase/auth';
-import { Alignment } from 'docx';
-
+import { Helmet } from 'react-helmet';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -17,16 +16,12 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const userName = process.env.REACT_APP_USER_NAME;
-let uid = '';
-let total_score = 0;
 
 function App() {
-  console.log('User Name:', userName);
+  const [userName, setUserName] = useState('Devansh');
   const [user, setUser] = useState(null);
   const [activities, setActivities] = useState([]);
   const [rewards, setRewards] = useState([]);
@@ -34,11 +29,26 @@ function App() {
   const [totalScore, setTotalScore] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [badbehavior10, setBadBehavior10] = useState('Bad Behavior(-10)');
-
-
   const [history, setHistory] = useState([]);
   const [isScorePopped, setIsScorePopped] = useState(false);
+  const [showUserOptions, setShowUserOptions] = useState(false);
+  const [backgroundColor, setBackgroundColor] = useState('#756060');
+  const [faviconPath, setFaviconPath] = useState('/favicon.ico'); // Default favicon
+
+  useEffect(() => {
+    // Update faviconPath whenever userName changes
+    let newFaviconPath = '/favicon.png'; // Default favicon
+    if (userName === 'Devansh') {
+      newFaviconPath = '/Devansh.png';
+    } else if (userName === 'Aarush') {
+      newFaviconPath = '/Aarush.jpg';
+    } else if (userName === 'Sharath') {
+      newFaviconPath = '/Sharath.png';
+    } else if (userName === 'Navya') {
+      newFaviconPath = '/Navya.png';
+    }
+    setFaviconPath(newFaviconPath);
+  }, [userName]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -56,8 +66,9 @@ function App() {
       .then((docSnapshot) => {
         if (docSnapshot.exists()) {
           const data = docSnapshot.data();
-          total_score = data.score || 0;
+          const total_score = data.score || 0;
           setTotalScore(total_score);
+          setBackgroundColor(data.background_color);
 
           if (Array.isArray(data.activities)) {
             setActivities(data.activities);
@@ -66,98 +77,48 @@ function App() {
           }
           if (Array.isArray(data.rewards)) {
             setRewards(data.rewards);
-          }
-          else {
+          } else {
             console.log('No rewards array found in final_score document.');
           }
           if (Array.isArray(data.punishments)) {
             setPunishments(data.punishments);
-          }
-          else {
+          } else {
             console.log('No punishments array found in final_score document.');
           }
         } else {
           console.log('No such document!');
+          setActivities([]);
+          setRewards([]);
+          setPunishments([]);
+          setTotalScore(0);
         }
       })
       .catch((error) => {
         console.log('Error getting document:', error);
       });
-  }, []);
+  }, [userName]);
 
-
-  const handleSignIn = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
-  };
-
-  const handleSignOut = () => {
-    auth.signOut();
-  };
-
-
-  const handlePasswordReset = async () => {
-    if (!email) {
-      alert('Please enter your email address.');
-      return;
-    }
-
+  const handleActivityClick = (activity, revert = 0) => {
+    let points;
     try {
-      await sendPasswordResetEmail(auth, email);
-      alert('Password reset email sent, please check your inbox.');
-    } catch (error) {
-      console.error('Error sending password reset email', error);
+      points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
+    } catch {
+      points = 10; // Default points if parsing fails
     }
-  };
 
-
-  const handleSignInWithEmail = async (e) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      if (!user.emailVerified) {
-        await auth.signOut();
-        alert('Please verify your email before signing in.');
-      }
-    } catch (error) {
-      if (error.code === 'auth/wrong-password') {
-        alert('Wrong password, please try again.');
-      } else {
-        alert('Error signing in, please try again.' + error.message);
-        console.error('Error signing in:', error);
-      }
-    }
-  };
-
-  const handleSignUpWithEmail = async () => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(auth.currentUser);
-      const user = userCredential.user;
-      alert('Verification email sent! Please check your inbox. Ater verification, please sign in.');
-      if (!user.emailVerified) {
-        await auth.signOut();
-      }
-    } catch (error) {
-      alert('Error signing up, please try again.' + error.message);
-      console.error('Error signing up:', error);
-    }
-  };
-
-
-  const handleActivityClick = (activity, revert=0) => {
-    let points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
     if (revert > 0) {
       points = -points;
       activity = 'UNDO ' + activity;
     }
+
     console.log('Points:', points);
-    setTotalScore(prevScore => prevScore + points);
+    setTotalScore((prevScore) => prevScore + points);
     const todoCollection = collection(db, 'genai', userName, 'MyScoring');
     const scoreDoc = doc(todoCollection, 'final_score');
     updateDoc(scoreDoc, {
-      score: totalScore + points
+      score: totalScore + points,
     });
+
     // Trigger pop-out effect
     setIsScorePopped(true);
     setTimeout(() => {
@@ -165,91 +126,121 @@ function App() {
     }, 300); // Duration matches CSS transition
 
     console.log('Total Score:', totalScore + points);
-    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
-    // const activityDoc = doc(todoCollection);
-    addDoc(hisotryDetailsCollection, {
+    const historyDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
+    addDoc(historyDetailsCollection, {
       activity: activity,
       points: points,
       scoreAfter: totalScore + points,
-      timestamp: new Date()
-    }).then(() => {
-      console.log('Activity logged successfully');
-    }).catch((error) => {
-      console.error('Error logging activity:', error);
-    });
-  };
-
-  const oldhandleActivityClick = (activity, points = 10) => {
-    setTotalScore(prevScore => prevScore + points);
-    const todoCollection = collection(db, 'genai', userName, 'MyScoring');
-    const scoreDoc = doc(todoCollection, 'final_score');
-    updateDoc(scoreDoc, {
-      score: totalScore + points
-    });
-    // Trigger pop-out effect
-    setIsScorePopped(true);
-    setTimeout(() => {
-      setIsScorePopped(false);
-    }, 300); // Duration matches CSS transition
-
-    console.log('Total Score:', totalScore + points);
-    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
-    // const activityDoc = doc(todoCollection);
-    addDoc(hisotryDetailsCollection, {
-      activity: activity,
-      points: points,
-      scoreAfter: totalScore + points,
-      timestamp: new Date()
-    }).then(() => {
-      console.log('Activity logged successfully');
-    }).catch((error) => {
-      console.error('Error logging activity:', error);
-    });
+      timestamp: new Date(),
+    })
+      .then(() => {
+        console.log('Activity logged successfully');
+      })
+      .catch((error) => {
+        console.error('Error logging activity:', error);
+      });
   };
 
   const showHistory = () => {
     console.log('Show History');
-    const hisotryDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
-    const historyQuery = query(hisotryDetailsCollection, orderBy('timestamp', 'desc'));
+    const historyDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
+    const historyQuery = query(historyDetailsCollection, orderBy('timestamp', 'desc'));
 
-    getDocs(historyQuery).then((querySnapshot) => {
-      const historyData = [];
-      querySnapshot.forEach((doc) => {
-        historyData.push(doc.data());
-        // console.log(doc.id, ' => ', doc.data());
-        console.log('Activity:', doc.data().activity);
-        console.log('Score:', doc.data().scoreAfter);
-        console.log('Timestamp:', doc.data().timestamp);
+    getDocs(historyQuery)
+      .then((querySnapshot) => {
+        const historyData = [];
+        querySnapshot.forEach((doc) => {
+          historyData.push(doc.data());
+          console.log('Activity:', doc.data().activity);
+          console.log('Score:', doc.data().scoreAfter);
+          console.log('Timestamp:', doc.data().timestamp);
+        });
+        setHistory(historyData);
+      })
+      .catch((error) => {
+        console.error('Error fetching history:', error);
       });
-      setHistory(historyData);
-    }).catch((error) => {
-      console.error('Error fetching history:', error);
-    });
+  };
+
+  // Handle user change
+  const handleUserChange = (selectedUser) => {
+    setUserName(selectedUser);
+    setShowUserOptions(false);
   };
 
   return (
     <div>
+      <Helmet>
+        <link rel="icon" href={faviconPath} />
+      </Helmet>
       <div className="fixed-header">
         <div className="app" style={{ fontSize: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 'bold' }}>
-              <img src={`${userName}.png`} alt={userName} style={{ width: '80px', height: '80px', borderRadius: '50%', marginRight: '' }} />  Points :
-              <span style={{ fontSize: '38px' }}>  <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
+            <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+              {/* Make image clickable */}
+              <img
+                src={`${userName}.png`}
+                alt={userName}
+                style={{ width: '80px', height: '80px', borderRadius: '50%', marginRight: '20px', cursor: 'pointer' }}
+                onClick={() => setShowUserOptions(!showUserOptions)}
+              />
+              Points :
+              <span style={{ fontSize: '38px' }}>
+                {' '}
+                <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
               </span>
             </div>
-            <br />
-            <br />
-            <br />
           </div>
+          {/* User selection menu */}
+          {showUserOptions && (
+            <div className="user-options">
+              <button onClick={() => handleUserChange('Devansh')}>
+                <img
+                  src="Devansh.png"
+                  alt="Devansh"
+                  style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                />
+              </button>
+              <button onClick={() => handleUserChange('Aarush')}>
+                <img
+                  src="Aarush.png"
+                  alt="Aarush"
+                  style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                />
+              </button>
+              <button onClick={() => handleUserChange('Sharath')}>
+                <img
+                  src="Sharath.png"
+                  alt="Sharath"
+                  style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                />
+              </button>
+              <button onClick={() => handleUserChange('Navya')}>
+                <img
+                  src="Navya.png"
+                  alt="Navya"
+                  style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                />
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="content">
         <div className="activities">
           {activities.map((activity, index) => (
             <div key={index}>
-              <button className="button" style= {{background: process.env.REACT_APP_BACKGROUND_COLOR}} onClick={(e) => { handleActivityClick(activity); e.target.classList.add('clicked'); setTimeout(() => {
-                e.target.classList.remove('clicked');
-              }, 400); }}>
+              <button
+                className="button"
+                style={{ backgroundColor: backgroundColor }}
+                onClick={(e) => {
+                  handleActivityClick(activity);
+                  e.target.classList.add('clicked');
+                  setTimeout(() => {
+                    e.target.classList.remove('clicked');
+                  }, 400);
+                }}
+              >
                 {activity}
               </button>
             </div>
@@ -259,10 +250,16 @@ function App() {
         <br />
         {rewards.map((reward, index) => (
           <div key={index}>
-            <button className="button reward-button" onClick={(e) => { handleActivityClick(reward); e.target.classList.add('clicked'); setTimeout(() => {
-                e.target.classList.remove('clicked');
-              }, 400); }}
-              >
+            <button
+              className="button reward-button"
+              onClick={(e) => {
+                handleActivityClick(reward);
+                e.target.classList.add('clicked');
+                setTimeout(() => {
+                  e.target.classList.remove('clicked');
+                }, 400);
+              }}
+            >
               {reward}
             </button>
           </div>
@@ -273,41 +270,71 @@ function App() {
       <div className="activities">
         {punishments.map((punishment, index) => (
           <div key={index}>
-            <button className="button punishmentbutton" onClick={(e) => { handleActivityClick(punishment); e.target.classList.add('clicked'); setTimeout(() => {
-                e.target.classList.remove('clicked');
-              }, 400); }}>
+            <button
+              className="button punishmentbutton"
+              onClick={(e) => {
+                handleActivityClick(punishment);
+                e.target.classList.add('clicked');
+                setTimeout(() => {
+                  e.target.classList.remove('clicked');
+                }, 400);
+              }}
+            >
               {punishment}
             </button>
           </div>
         ))}
       </div>
-      <br />
-      <br />
+
+      {/* Display History */}
+      <div className="history">
+        {history.length > 0
+          ? history.map((item, index) => (
+              <div key={index} className="history-item">
+                <p>
+                  <strong>Activity:</strong> {item.activity}
+                </p>
+                <p>
+                  <strong>Score:</strong> {item.scoreAfter}
+                </p>
+                <p>
+                  <strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}
+                </p>
+                <p>
+                  <button
+                    className="undobutton"
+                    onClick={(e) => {
+                      handleActivityClick(item.activity, 1);
+                      e.target.classList.add('clicked');
+                      setTimeout(() => {
+                        e.target.classList.remove('clicked');
+                      }, 400);
+                    }}
+                  >
+                    Undo
+                  </button>
+                </p>
+              </div>
+            ))
+          : null}
+      </div>
       <div>
-        <button className="historybutton" style={{ fontSize: '29px' }} onClick={(e) => {showHistory();
-        e.target.classList.add('clicked'); e.target.classList.add('clicked'); setTimeout(() => {e.target.classList.remove('clicked');}, 400);} }
-          >
+        <button
+          className="historybutton"
+          style={{ fontSize: '29px' }}
+          onClick={(e) => {
+            showHistory();
+            e.target.classList.add('clicked');
+            setTimeout(() => {
+              e.target.classList.remove('clicked');
+            }, 400);
+          }}
+        >
           History of Activities
         </button>
       </div>
-      {/* Display History */}
-      <div className="history">
-        {history.length > 0 ? (
-          history.map((item, index) => (
-            <div key={index} className="history-item">
-              <p><strong>Activity:</strong> {item.activity}</p>
-              <p><strong>Score:</strong> {item.scoreAfter}</p>
-              <p><strong>Timestamp:</strong> {new Date(item.timestamp.seconds * 1000).toLocaleString()}</p>
-              <p><button className="undobutton" onClick={(e) => { handleActivityClick(item.activity, 1); e.target.classList.add('clicked'); e.target.classList.add('clicked'); setTimeout(() => {
-                e.target.classList.remove('clicked');
-              }, 400); }}>Undo</button></p>
-            </div>
-          ))
-        ) : null}
-      </div>
     </div>
-  )
+  );
 }
-
 
 export default App;

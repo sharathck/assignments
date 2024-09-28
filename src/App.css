@@ -24,7 +24,7 @@ color: orange;
 }
 .button {
   padding: 2px 2px;
-  margin-left: 14px;
+  margin-left: 2px;
   margin-bottom: 15px;
   border: 1px solid black;
   background-color: #19600c;
@@ -243,7 +243,8 @@ form {
 .reward-button {
   background-color: rgb(235, 241, 244);
   color: rgb(28, 34, 120);
-  padding: 10px 20px;
+  padding: 2px 2px;
+  font-size: 28px;
   box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
 }
 
@@ -267,10 +268,10 @@ form {
 
 .punishmentbutton {
   background-color: rgb(247, 156, 156);
-  font-size: 24px;
+  font-size: 26px;
   color: rgb(68, 8, 8);
   border: none;
-  padding: 10px 20px;
+  padding: 2px 2px;
   margin-right: 10px;
   cursor: pointer;
   border-radius: 5px;
@@ -280,7 +281,7 @@ form {
 .historybutton {
   padding: 2px 2px;
   margin-left: 2px;
-  margin-bottom: 15px;
+  margin-bottom: 1px;
   background-color: #d8ecbc;
   color: rgb(1, 17, 7);
   box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
