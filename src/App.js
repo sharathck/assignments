@@ -291,17 +291,17 @@ function App() {
               <button
                 className="signoutbutton"
                 onClick={() => setIsEditMode(!isEditMode)}
-                style={{ marginLeft: '10px' }}
+                style={{ marginLeft: '4px' }}
               >
-                {isEditMode ? 'Cancel Edit' : 'Edit Titles'}
+                {isEditMode ? 'Cancel' : 'Edit'}
               </button>
               {isEditMode && (
                 <button
                   className="signonpagebutton"
                   onClick={saveChanges}
-                  style={{ marginLeft: '10px' }}
+                  style={{ marginLeft: '4px' }}
                 >
-                  Save Changes
+                  Save
                 </button>
               )}
             </div>
@@ -379,7 +379,7 @@ function App() {
                 placeholder="Add new activity"
                 className="edit-input"
               />
-              <button onClick={addNewActivity} className="add-button">Add</button>
+              <button onClick={addNewActivity} className="add-button">+</button>
             </div>
           )}
         </div>

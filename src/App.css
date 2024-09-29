@@ -299,3 +299,11 @@ form {
   cursor: pointer;
   font-size: 22px;
 }
+.edit-input {
+  padding: 5px;
+  font-size: 18px;
+  width: 85%;
+  border: 1px solid #786e6e;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
