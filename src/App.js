@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit,  FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock, FaFont } from 'react-icons/fa';
+import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock, FaFont } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
@@ -36,7 +36,7 @@ function App() {
   const [isScorePopped, setIsScorePopped] = useState(false);
   const [showUserOptions, setShowUserOptions] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#756060');
-  const [reload, setReload  ] = useState(false);
+  const [reload, setReload] = useState(false);
   const [faviconPath, setFaviconPath] = useState('/favicon.ico'); // Default favicon
   const [isHistoryVisible, setIsHistoryVisible] = useState(false); // New state to track history visibility
   const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
@@ -231,10 +231,10 @@ function App() {
     const updatedActivities = newActivity.trim() !== '' ? [...activities, newActivity.trim()] : activities;
     const updatedRewards = newReward.trim() !== '' ? [...rewards, newReward.trim()] : rewards;
     const updatedPunishments = newPunishment.trim() !== '' ? [...punishments, newPunishment.trim()] : punishments;
-  
+
     const todoCollection = collection(db, 'genai', userName, 'MyScoring');
     const scoreDoc = doc(todoCollection, 'final_score');
-    
+
     updateDoc(scoreDoc, {
       activities: updatedActivities,
       rewards: updatedRewards,
@@ -473,91 +473,6 @@ function App() {
           )}
         </div>
         <br />
-        <br />
-        <div className="activities">
-          {rewards.map((reward, index) => (
-            <div key={index}>
-              {isEditMode ? (
-                <input
-                  type="text"
-                  value={reward}
-                  onChange={(e) => handleTitleChange(index, e.target.value, 'reward')}
-                  className="edit-input"
-                />
-              ) : (
-                <button
-                  className="button reward-button"
-                  onClick={(e) => {
-                    handleActivityClick(reward);
-                    e.target.classList.add('clicked');
-                    setTimeout(() => {
-                      e.target.classList.remove('clicked');
-                    }, 400);
-                  }}
-                >
-                  {reward}
-                </button>
-              )}
-            </div>
-          ))}
-          {/* Add new reward in edit mode */}
-          {isEditMode && (
-            <div className="add-new-item">
-              <input
-                type="text"
-                value={newReward}
-                onChange={(e) => setNewReward(e.target.value)}
-                placeholder="Add new reward"
-                className="edit-input"
-              />
-              <button onClick={addNewReward} className="add-button"><FaPlus /></button>
-            </div>
-          )}
-        </div>
-        <br />
-        <br />
-        <div className="activities">
-          {punishments.map((punishment, index) => (
-            <div key={index}>
-              {isEditMode ? (
-                <input
-                  type="text"
-                  value={punishment}
-                  onChange={(e) => handleTitleChange(index, e.target.value, 'punishment')}
-                  className="edit-input"
-                />
-              ) : (
-                <button
-                  className="button punishmentbutton"
-                  onClick={(e) => {
-                    handleActivityClick(punishment);
-                    e.target.classList.add('clicked');
-                    setTimeout(() => {
-                      e.target.classList.remove('clicked');
-                    }, 400);
-                  }}
-                >
-                  {punishment}
-                </button>
-              )}
-            </div>
-          ))}
-          {/* Add new punishment in edit mode */}
-          {isEditMode && (
-            <div className="add-new-item">
-              <input
-                type="text"
-                value={newPunishment}
-                onChange={(e) => setNewPunishment(e.target.value)}
-                placeholder="Add new punishment"
-                className="edit-input"
-              />
-              <button onClick={addNewPunishment} className="add-button"><FaPlus /></button>
-            </div>
-          )}
-        </div>
-        <br />
-        <br />
         <div>
           <button
             className="historybutton"
@@ -608,9 +523,18 @@ function App() {
             ) : (
               <p>No history available.</p>
             )}
+            <br />
+            <br />
           </div>
         )}
       </div>
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
     </div>
   );
 }
