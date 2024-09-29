@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider } from 'firebase/auth';
 import { Helmet } from 'react-helmet';
+import { useLocation } from 'react-router-dom';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -20,8 +21,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+
 function App() {
-  const [userName, setUserName] = useState('Devansh');
+  const getURLParmQuery = new URLSearchParams(window.location.search);
+  const defaultUser = getURLParmQuery.get('defaultUser') || 'Devansh';
+  const [userName, setUserName] = useState(defaultUser);
   const [user, setUser] = useState(null);
   const [activities, setActivities] = useState([]);
   const [rewards, setRewards] = useState([]);
