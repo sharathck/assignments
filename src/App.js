@@ -291,7 +291,7 @@ function App() {
               <button
                 className="signoutbutton"
                 onClick={() => setIsEditMode(!isEditMode)}
-                style={{ marginLeft: '4px' }}
+                style={{ marginLeft: '1px' }}
               >
                 {isEditMode ? 'Cancel' : 'Edit'}
               </button>

@@ -117,9 +117,9 @@ form {
   border: none;
   color: #fff;
   cursor: pointer;
-  margin-left: 18px;
+  margin-left: 2px;
   padding: 5px 5px;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 6px 2px 8px rgba(0, 0, 0, 0.4);
   font-size: 18px; /* make the button text extremely small */
 }
 .textbutton {
@@ -159,7 +159,7 @@ form {
 }
 .signoutbutton:hover {
   background-color: #555;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  box-shadow: 6px 2px 8px rgba(0, 0, 0, 0.8);
 }
 .textinput {
   padding: 2px;
@@ -177,7 +177,7 @@ form {
   color: #fff;
   cursor: pointer;
   margin-left: 10px;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  box-shadow: 6px 2px 8px rgba(0, 0, 0, 0.8);
   padding: 5px 5px;
   font-size: 18px; /* make the button text extremely small */
 }
