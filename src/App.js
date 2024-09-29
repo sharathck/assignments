@@ -36,6 +36,7 @@ function App() {
   const [isScorePopped, setIsScorePopped] = useState(false);
   const [showUserOptions, setShowUserOptions] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#756060');
+  const [reload, setReload  ] = useState(false);
   const [faviconPath, setFaviconPath] = useState('/favicon.ico'); // Default favicon
   const [isHistoryVisible, setIsHistoryVisible] = useState(false); // New state to track history visibility
   const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
@@ -111,13 +112,13 @@ function App() {
       .catch((error) => {
         console.log('Error getting document:', error);
       });
-  }, [userName]);
+  }, [userName, reload]);
 
   // Clear history when userName changes
   useEffect(() => {
     setHistory([]); // Clear history state
     setIsHistoryVisible(false); // Hide history when user changes
-  }, [userName]);
+  }, [userName, reload]);
 
   const handleActivityClick = (activity, revert = 0) => {
     if (isEditMode) return; // Disable activity click in edit mode
@@ -226,16 +227,26 @@ function App() {
 
   // Save changes to Firebase
   const saveChanges = () => {
+    // Create updated arrays by appending new entries if they exist
+    const updatedActivities = newActivity.trim() !== '' ? [...activities, newActivity.trim()] : activities;
+    const updatedRewards = newReward.trim() !== '' ? [...rewards, newReward.trim()] : rewards;
+    const updatedPunishments = newPunishment.trim() !== '' ? [...punishments, newPunishment.trim()] : punishments;
+  
     const todoCollection = collection(db, 'genai', userName, 'MyScoring');
     const scoreDoc = doc(todoCollection, 'final_score');
+    
     updateDoc(scoreDoc, {
-      activities: activities,
-      rewards: rewards,
-      punishments: punishments,
+      activities: updatedActivities,
+      rewards: updatedRewards,
+      punishments: updatedPunishments,
     })
       .then(() => {
-        alert('Changes saved successfully.');
         setIsEditMode(false);
+        // Clear new item inputs
+        setNewActivity('');
+        setNewReward('');
+        setNewPunishment('');
+        setReload(!reload); // Reload data
       })
       .catch((error) => {
         console.error('Error saving changes:', error);
@@ -352,7 +363,6 @@ function App() {
               ) : (
                 <button
                   className="button"
-                  style={{ backgroundColor: backgroundColor }}
                   onClick={(e) => {
                     handleActivityClick(activity);
                     e.target.classList.add('clicked');
@@ -376,7 +386,89 @@ function App() {
                 placeholder="Add new activity"
                 className="edit-input"
               />
-              <button onClick={addNewActivity} className="add-button"><FaPlus /></button>
+              <button onClick={addNewActivity} className="add-button">Add</button>
+            </div>
+          )}
+        </div>
+
+        <div className="activities">
+          {rewards.map((reward, index) => (
+            <div key={index}>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={reward}
+                  onChange={(e) => handleTitleChange(index, e.target.value, 'reward')}
+                  className="edit-input"
+                />
+              ) : (
+                <button
+                  className="button reward-button"
+                  onClick={(e) => {
+                    handleActivityClick(reward);
+                    e.target.classList.add('clicked');
+                    setTimeout(() => {
+                      e.target.classList.remove('clicked');
+                    }, 400);
+                  }}
+                >
+                  {reward}
+                </button>
+              )}
+            </div>
+          ))}
+          {/* Add new reward in edit mode */}
+          {isEditMode && (
+            <div className="add-new-item">
+              <input
+                type="text"
+                value={newReward}
+                onChange={(e) => setNewReward(e.target.value)}
+                placeholder="Add new reward"
+                className="edit-input"
+              />
+              <button onClick={addNewReward} className="add-button">Add</button>
+            </div>
+          )}
+        </div>
+
+        <div className="activities">
+          {punishments.map((punishment, index) => (
+            <div key={index}>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={punishment}
+                  onChange={(e) => handleTitleChange(index, e.target.value, 'punishment')}
+                  className="edit-input"
+                />
+              ) : (
+                <button
+                  className="button punishmentbutton"
+                  onClick={(e) => {
+                    handleActivityClick(punishment);
+                    e.target.classList.add('clicked');
+                    setTimeout(() => {
+                      e.target.classList.remove('clicked');
+                    }, 400);
+                  }}
+                >
+                  {punishment}
+                </button>
+              )}
+            </div>
+          ))}
+          {/* Add new punishment in edit mode */}
+          {isEditMode && (
+            <div className="add-new-item">
+              <input
+                type="text"
+                value={newPunishment}
+                onChange={(e) => setNewPunishment(e.target.value)}
+                placeholder="Add new punishment"
+                className="edit-input"
+              />
+              <button onClick={addNewPunishment} className="add-button">Add</button>
             </div>
           )}
         </div>
