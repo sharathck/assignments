@@ -21,7 +21,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-
 function App() {
   const getURLParmQuery = new URLSearchParams(window.location.search);
   const defaultUser = getURLParmQuery.get('defaultUser') || 'Devansh';
@@ -39,6 +38,12 @@ function App() {
   const [backgroundColor, setBackgroundColor] = useState('#756060');
   const [faviconPath, setFaviconPath] = useState('/favicon.ico'); // Default favicon
   const [isHistoryVisible, setIsHistoryVisible] = useState(false); // New state to track history visibility
+  const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
+
+  // New state variables for adding new items
+  const [newActivity, setNewActivity] = useState('');
+  const [newReward, setNewReward] = useState('');
+  const [newPunishment, setNewPunishment] = useState('');
 
   useEffect(() => {
     // Update faviconPath whenever userName changes
@@ -53,6 +58,11 @@ function App() {
       newFaviconPath = '/Navya.png';
     }
     setFaviconPath(newFaviconPath);
+
+    // Clear new item inputs when user changes
+    setNewActivity('');
+    setNewReward('');
+    setNewPunishment('');
   }, [userName]);
 
   useEffect(() => {
@@ -110,6 +120,8 @@ function App() {
   }, [userName]);
 
   const handleActivityClick = (activity, revert = 0) => {
+    if (isEditMode) return; // Disable activity click in edit mode
+
     let points;
     try {
       points = parseInt(activity.match(/\(([-+]?\d+)\)/)[1], 10);
@@ -154,25 +166,30 @@ function App() {
 
   // Modify the showHistory function
   const showHistory = () => {
-    console.log('Show History');
-    const historyDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
-    const historyQuery = query(historyDetailsCollection, orderBy('timestamp', 'desc'));
+    if (isHistoryVisible) {
+      setIsHistoryVisible(false);
+      setHistory([]);
+    } else {
+      console.log('Show History');
+      const historyDetailsCollection = collection(db, 'genai', userName, 'MyScoring', 'history', 'details');
+      const historyQuery = query(historyDetailsCollection, orderBy('timestamp', 'desc'));
 
-    getDocs(historyQuery)
-      .then((querySnapshot) => {
-        const historyData = [];
-        querySnapshot.forEach((doc) => {
-          historyData.push(doc.data());
-          console.log('Activity:', doc.data().activity);
-          console.log('Score:', doc.data().scoreAfter);
-          console.log('Timestamp:', doc.data().timestamp);
+      getDocs(historyQuery)
+        .then((querySnapshot) => {
+          const historyData = [];
+          querySnapshot.forEach((doc) => {
+            historyData.push(doc.data());
+            console.log('Activity:', doc.data().activity);
+            console.log('Score:', doc.data().scoreAfter);
+            console.log('Timestamp:', doc.data().timestamp);
+          });
+          setHistory(historyData);
+          setIsHistoryVisible(true); // Set history visibility to true
+        })
+        .catch((error) => {
+          console.error('Error fetching history:', error);
         });
-        setHistory(historyData);
-        setIsHistoryVisible(true); // Set history visibility to true
-      })
-      .catch((error) => {
-        console.error('Error fetching history:', error);
-      });
+    }
   };
 
   // Optionally, fetch history when userName changes and history is visible
@@ -186,6 +203,66 @@ function App() {
   const handleUserChange = (selectedUser) => {
     setUserName(selectedUser);
     setShowUserOptions(false);
+    setIsHistoryVisible(false); // Hide history when user changes
+    setHistory([]);
+  };
+
+  // Handle title changes
+  const handleTitleChange = (index, newValue, type) => {
+    if (type === 'activity') {
+      const updatedActivities = [...activities];
+      updatedActivities[index] = newValue;
+      setActivities(updatedActivities);
+    } else if (type === 'reward') {
+      const updatedRewards = [...rewards];
+      updatedRewards[index] = newValue;
+      setRewards(updatedRewards);
+    } else if (type === 'punishment') {
+      const updatedPunishments = [...punishments];
+      updatedPunishments[index] = newValue;
+      setPunishments(updatedPunishments);
+    }
+  };
+
+  // Save changes to Firebase
+  const saveChanges = () => {
+    const todoCollection = collection(db, 'genai', userName, 'MyScoring');
+    const scoreDoc = doc(todoCollection, 'final_score');
+    updateDoc(scoreDoc, {
+      activities: activities,
+      rewards: rewards,
+      punishments: punishments,
+    })
+      .then(() => {
+        alert('Changes saved successfully.');
+        setIsEditMode(false);
+      })
+      .catch((error) => {
+        console.error('Error saving changes:', error);
+        alert('Error saving changes, please try again.');
+      });
+  };
+
+  // New functions to add new items
+  const addNewActivity = () => {
+    if (newActivity.trim() !== '') {
+      setActivities([...activities, newActivity.trim()]);
+      setNewActivity('');
+    }
+  };
+
+  const addNewReward = () => {
+    if (newReward.trim() !== '') {
+      setRewards([...rewards, newReward.trim()]);
+      setNewReward('');
+    }
+  };
+
+  const addNewPunishment = () => {
+    if (newPunishment.trim() !== '') {
+      setPunishments([...punishments, newPunishment.trim()]);
+      setNewPunishment('');
+    }
   };
 
   return (
@@ -209,6 +286,24 @@ function App() {
                 {' '}
                 <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
               </span>
+            </div>
+            <div>
+              <button
+                className="signoutbutton"
+                onClick={() => setIsEditMode(!isEditMode)}
+                style={{ marginLeft: '10px' }}
+              >
+                {isEditMode ? 'Cancel Edit' : 'Edit Titles'}
+              </button>
+              {isEditMode && (
+                <button
+                  className="signonpagebutton"
+                  onClick={saveChanges}
+                  style={{ marginLeft: '10px' }}
+                >
+                  Save Changes
+                </button>
+              )}
             </div>
           </div>
           {/* User selection menu */}
@@ -250,113 +345,182 @@ function App() {
         <div className="activities">
           {activities.map((activity, index) => (
             <div key={index}>
-              <button
-                className="button"
-                style={{ backgroundColor: backgroundColor }}
-                onClick={(e) => {
-                  handleActivityClick(activity);
-                  e.target.classList.add('clicked');
-                  setTimeout(() => {
-                    e.target.classList.remove('clicked');
-                  }, 400);
-                }}
-              >
-                {activity}
-              </button>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={activity}
+                  onChange={(e) => handleTitleChange(index, e.target.value, 'activity')}
+                  className="edit-input"
+                />
+              ) : (
+                <button
+                  className="button"
+                  style={{ backgroundColor: backgroundColor }}
+                  onClick={(e) => {
+                    handleActivityClick(activity);
+                    e.target.classList.add('clicked');
+                    setTimeout(() => {
+                      e.target.classList.remove('clicked');
+                    }, 400);
+                  }}
+                >
+                  {activity}
+                </button>
+              )}
             </div>
           ))}
-        </div>
-        <br />
-        <br />
-        {rewards.map((reward, index) => (
-          <div key={index}>
-            <button
-              className="button reward-button"
-              onClick={(e) => {
-                handleActivityClick(reward);
-                e.target.classList.add('clicked');
-                setTimeout(() => {
-                  e.target.classList.remove('clicked');
-                }, 400);
-              }}
-            >
-              {reward}
-            </button>
-          </div>
-        ))}
-      </div>
-      <br />
-      <br />
-      <div className="activities">
-        {punishments.map((punishment, index) => (
-          <div key={index}>
-            <button
-              className="button punishmentbutton"
-              onClick={(e) => {
-                handleActivityClick(punishment);
-                e.target.classList.add('clicked');
-                setTimeout(() => {
-                  e.target.classList.remove('clicked');
-                }, 400);
-              }}
-            >
-              {punishment}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Display History */}
-      {isHistoryVisible && (
-        <div className="history">
-          {history.length > 0 ? (
-            history.map((item, index) => (
-              <div key={index} className="history-item">
-                <p>
-                  <strong>Activity:</strong> {item.activity}
-                </p>
-                <p>
-                  <strong>Score:</strong> {item.scoreAfter}
-                </p>
-                <p>
-                  <strong>Timestamp:</strong>{' '}
-                  {new Date(item.timestamp.seconds * 1000).toLocaleString()}
-                </p>
-                <p>
-                  <button
-                    className="undobutton"
-                    onClick={(e) => {
-                      handleActivityClick(item.activity, 1);
-                      e.target.classList.add('clicked');
-                      setTimeout(() => {
-                        e.target.classList.remove('clicked');
-                      }, 400);
-                    }}
-                  >
-                    Undo
-                  </button>
-                </p>
-              </div>
-            ))
-          ) : (
-            <p>No history available.</p>
+          {/* Add new activity in edit mode */}
+          {isEditMode && (
+            <div className="add-new-item">
+              <input
+                type="text"
+                value={newActivity}
+                onChange={(e) => setNewActivity(e.target.value)}
+                placeholder="Add new activity"
+                className="edit-input"
+              />
+              <button onClick={addNewActivity} className="add-button">Add</button>
+            </div>
           )}
         </div>
-      )}
-      <div>
-        <button
-          className="historybutton"
-          style={{ fontSize: '29px' }}
-          onClick={(e) => {
-            showHistory();
-            e.target.classList.add('clicked');
-            setTimeout(() => {
-              e.target.classList.remove('clicked');
-            }, 400);
-          }}
-        >
-          History of Activities
-        </button>
+        <br />
+        <br />
+        <div className="activities">
+          {rewards.map((reward, index) => (
+            <div key={index}>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={reward}
+                  onChange={(e) => handleTitleChange(index, e.target.value, 'reward')}
+                  className="edit-input"
+                />
+              ) : (
+                <button
+                  className="button reward-button"
+                  onClick={(e) => {
+                    handleActivityClick(reward);
+                    e.target.classList.add('clicked');
+                    setTimeout(() => {
+                      e.target.classList.remove('clicked');
+                    }, 400);
+                  }}
+                >
+                  {reward}
+                </button>
+              )}
+            </div>
+          ))}
+          {/* Add new reward in edit mode */}
+          {isEditMode && (
+            <div className="add-new-item">
+              <input
+                type="text"
+                value={newReward}
+                onChange={(e) => setNewReward(e.target.value)}
+                placeholder="Add new reward"
+                className="edit-input"
+              />
+              <button onClick={addNewReward} className="add-button">Add</button>
+            </div>
+          )}
+        </div>
+        <br />
+        <br />
+        <div className="activities">
+          {punishments.map((punishment, index) => (
+            <div key={index}>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={punishment}
+                  onChange={(e) => handleTitleChange(index, e.target.value, 'punishment')}
+                  className="edit-input"
+                />
+              ) : (
+                <button
+                  className="button punishmentbutton"
+                  onClick={(e) => {
+                    handleActivityClick(punishment);
+                    e.target.classList.add('clicked');
+                    setTimeout(() => {
+                      e.target.classList.remove('clicked');
+                    }, 400);
+                  }}
+                >
+                  {punishment}
+                </button>
+              )}
+            </div>
+          ))}
+          {/* Add new punishment in edit mode */}
+          {isEditMode && (
+            <div className="add-new-item">
+              <input
+                type="text"
+                value={newPunishment}
+                onChange={(e) => setNewPunishment(e.target.value)}
+                placeholder="Add new punishment"
+                className="edit-input"
+              />
+              <button onClick={addNewPunishment} className="add-button">Add</button>
+            </div>
+          )}
+        </div>
+        <br />
+        <br />
+        <div>
+          <button
+            className="historybutton"
+            style={{ fontSize: '29px' }}
+            onClick={(e) => {
+              showHistory();
+              e.target.classList.add('clicked');
+              setTimeout(() => {
+                e.target.classList.remove('clicked');
+              }, 400);
+            }}
+          >
+            {isHistoryVisible ? 'Hide History' : 'History of Activities'}
+          </button>
+        </div>
+        {/* Display History */}
+        {isHistoryVisible && (
+          <div className="history">
+            {history.length > 0 ? (
+              history.map((item, index) => (
+                <div key={index} className="history-item">
+                  <p>
+                    <strong>Activity:</strong> {item.activity}
+                  </p>
+                  <p>
+                    <strong>Score:</strong> {item.scoreAfter}
+                  </p>
+                  <p>
+                    <strong>Timestamp:</strong>{' '}
+                    {new Date(item.timestamp.seconds * 1000).toLocaleString()}
+                  </p>
+                  <p>
+                    <button
+                      className="undobutton"
+                      onClick={(e) => {
+                        handleActivityClick(item.activity, 1);
+                        e.target.classList.add('clicked');
+                        setTimeout(() => {
+                          e.target.classList.remove('clicked');
+                        }, 400);
+                      }}
+                    >
+                      Undo
+                    </button>
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p>No history available.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
