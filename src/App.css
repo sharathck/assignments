@@ -117,7 +117,7 @@ form {
   border: none;
   color: #fff;
   cursor: pointer;
-  margin-left: 2px;
+  margin-left: 12px;
   padding: 5px 5px;
   box-shadow: 6px 2px 8px rgba(0, 0, 0, 0.4);
   font-size: 18px; /* make the button text extremely small */
@@ -306,4 +306,18 @@ form {
   border: 1px solid #786e6e;
   border-radius: 4px;
   margin-bottom: 5px;
+}
+.add-button {
+  padding: 2px 2px;
+  margin-left: 2px;
+  margin-bottom: 15px;
+  background-color: #0e5e36;
+  color: rgb(246, 248, 250);
+  box-shadow: 6px 6px 8px rgba(34, 33, 33, 0.4);
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.add-button:hover {
+  background-color: #45a049; /* Darker green on hover */
 }

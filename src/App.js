@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit, FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock, FaFont } from 'react-icons/fa';
+import { FaPlus, FaCheck, FaTrash, FaHeadphones, FaEdit,  FaSignOutAlt, FaFileWord, FaFileAlt, FaCalendar, FaPlay, FaReadme, FaArrowLeft, FaCheckDouble, FaClock, FaFont } from 'react-icons/fa';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, deleteDoc, getDocs, startAfter, collection, query, where, orderBy, and, onSnapshot, addDoc, updateDoc, limit, persistentLocalCache, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
@@ -286,14 +286,11 @@ function App() {
                 {' '}
                 <span className={`score ${isScorePopped ? 'score-popped' : ''}`}>{totalScore}</span>
               </span>
-            </div>
-            <div>
               <button
                 className="signoutbutton"
                 onClick={() => setIsEditMode(!isEditMode)}
-                style={{ marginLeft: '1px' }}
               >
-                {isEditMode ? 'Cancel' : 'Edit'}
+                {isEditMode ? 'Cancel' : 'Edit Mode'}
               </button>
               {isEditMode && (
                 <button
@@ -379,7 +376,7 @@ function App() {
                 placeholder="Add new activity"
                 className="edit-input"
               />
-              <button onClick={addNewActivity} className="add-button">+</button>
+              <button onClick={addNewActivity} className="add-button"><FaPlus /></button>
             </div>
           )}
         </div>
@@ -421,7 +418,7 @@ function App() {
                 placeholder="Add new reward"
                 className="edit-input"
               />
-              <button onClick={addNewReward} className="add-button">Add</button>
+              <button onClick={addNewReward} className="add-button"><FaPlus /></button>
             </div>
           )}
         </div>
@@ -463,7 +460,7 @@ function App() {
                 placeholder="Add new punishment"
                 className="edit-input"
               />
-              <button onClick={addNewPunishment} className="add-button">Add</button>
+              <button onClick={addNewPunishment} className="add-button"><FaPlus /></button>
             </div>
           )}
         </div>
