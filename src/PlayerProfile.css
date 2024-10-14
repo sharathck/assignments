@@ -1,0 +1,48 @@
+.profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    background: linear-gradient(135deg, #b1cdd9, #88d3ce);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.1);
+    color: rgb(89, 69, 69);
+}
+.ratings-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.player-name {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.rating-value {
+    font-size: 14px;
+    color: #333;
+    margin-top: 5px;
+}
+
+
+.average {
+    grid-column: span 3;
+    background-color: rgba(0, 255, 127, 0.5);
+}
+
+.rating-bar {
+    width: 100%;
+    background-color: #faf8f8;
+    border-radius: 5px;
+}
+
+.rating-fill {
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+}
+
+.rating-bar:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
