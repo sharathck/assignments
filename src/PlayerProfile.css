@@ -1,7 +1,6 @@
 .profile-container {
     max-width: 98%;
     margin: 0 auto;
-    text-align: center;
     background: linear-gradient(135deg, #f7f8f8, #ecf5f4);
     border-radius: 10px;
     padding: 10px;
@@ -11,9 +10,18 @@
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    flex-wrap: wrap;
+    grid-template-columns: repeat(2, auto);
     grid-template-rows: repeat(2, auto);
     gap: 20px;
+}
+
+@media (max-width: 600px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
 }
 
 .ratings-container {
