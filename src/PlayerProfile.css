@@ -49,7 +49,7 @@
     height: 100%;
     width: 100%;
     font-size: large;
-    color:#f7f8f8;
+    color:#fcfcfc;
     transition: width 0.5s ease-in-out;
 }
 .rating-bar {
@@ -58,13 +58,14 @@
 }
 
 .rating-fill {
-    background-color: #f2c40c;
+    background-color: #09766e;
     border-radius: 5px;
     height: 100%;
     width: 100%;
     font-size: large;
     transition: width 0.5s ease-in-out;
     margin-bottom: 15px;
+    color: #b5e3b5;
 }
 
 .rating-bar:hover {
