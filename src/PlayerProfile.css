@@ -1,17 +1,26 @@
 .profile-container {
-    max-width: 900px;
+    max-width: 98%;
     margin: 0 auto;
     text-align: center;
-    background: linear-gradient(135deg, #b1cdd9, #88d3ce);
+    background: linear-gradient(135deg, #f7f8f8, #ecf5f4);
     border-radius: 10px;
     padding: 10px;
     box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.1);
     color: rgb(89, 69, 69);
 }
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 20px;
+}
+
 .ratings-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
+    margin-bottom: 10px;
 }
 
 .player-name {
@@ -27,22 +36,55 @@
 
 
 .average {
-    grid-column: span 3;
+    margin-top: 10%;
     background-color: rgba(0, 255, 127, 0.5);
+    border-radius: 5px;
+    font-size: 24px;
+    font-weight: bold;
 }
 
+.average-rating-fill {
+    background-color: #000402;
+    border-radius: 5px;
+    height: 100%;
+    width: 100%;
+    font-size: large;
+    color:#f7f8f8;
+    transition: width 0.5s ease-in-out;
+}
 .rating-bar {
     width: 100%;
-    background-color: #faf8f8;
     border-radius: 5px;
 }
 
 .rating-fill {
+    background-color: #ffcc00;
+    border-radius: 5px;
     height: 100%;
+    width: 100%;
+    font-size: large;
     transition: width 0.5s ease-in-out;
+    margin-bottom: 15px;
 }
 
 .rating-bar:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transform: translate3d(2px, -5px, 5px);
+    box-shadow: 11px 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.rating-fill:hover {
+    font-size: 1.5rem;
+}
+
+.player-profile {
+    background-color: #ffffff; /* White background */
+    border-radius: 10px;       /* Rounded corners */
+    padding: 20px;             /* Inner spacing */
+    box-shadow: 9px 5px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: transform 0.3s ease;
+}
+
+.player-profile:hover {
+    transform: translateY(-5px); /* Lift effect on hover */
+    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
 }
