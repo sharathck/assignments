@@ -58,7 +58,7 @@
 }
 
 .rating-fill {
-    background-color: #ffcc00;
+    background-color: #f2c40c;
     border-radius: 5px;
     height: 100%;
     width: 100%;
@@ -77,14 +77,14 @@
 }
 
 .player-profile {
-    background-color: #ffffff; /* White background */
+    background: linear-gradient(135deg, #eff5f5, #b6e7e1);
     border-radius: 10px;       /* Rounded corners */
     padding: 20px;             /* Inner spacing */
-    box-shadow: 9px 5px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    box-shadow: 4px 2px 8px rgba(3, 6, 7, 0.716); /* Subtle shadow */
     transition: transform 0.3s ease;
 }
 
 .player-profile:hover {
     transform: translateY(-5px); /* Lift effect on hover */
-    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+    box-shadow: 9px 5px 15px rgba(3, 6, 7, 0.716); /* Subtle shadow */
 }
